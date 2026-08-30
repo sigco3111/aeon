@@ -191,7 +191,7 @@ export class Sim {
     // a survivable start, but thriving/winning still takes good play — not too easy, not too hard).
     this.world.blessFood(spot.x, spot.y, 11);
     this.world.blessFood(spot.x, spot.y, 6);
-    this.emit('born', `${tribe.name} take their first breath`, spot.x, spot.y, hue);
+    this.emit('born', `${tribe.name}이(가) 처음으로 숨을 쉽니다`, spot.x, spot.y, hue);
     return tribe;
   }
 
@@ -266,18 +266,18 @@ export class Sim {
         const steered = this.governance.steerResearch(this, tr);
         for (let si = 0; si < steered.length; si++) {
           const td = steered[si];
-          this.emit('tech', `${tr.name} discovers ${td.name} — ${this.tech.eraName(td.era)} Era`, tr.capitalX, tr.capitalY, tr.hue);
+          this.emit('tech', `${tr.name}이(가) ${td.name} 기술을 발견합니다 — ${this.tech.eraName(td.era)}`, tr.capitalX, tr.capitalY, tr.hue);
         }
         const unlocked = this.tech.accrue(tr, 1, this.rng);
         for (let ui = 0; ui < unlocked.length; ui++) {
           const td = unlocked[ui];
-          this.emit('tech', `${tr.name} discovers ${td.name} — ${this.tech.eraName(td.era)} Era`, tr.capitalX, tr.capitalY, tr.hue);
+          this.emit('tech', `${tr.name}이(가) ${td.name} 기술을 발견합니다 — ${this.tech.eraName(td.era)}`, tr.capitalX, tr.capitalY, tr.hue);
         }
         // civics (culture tree) → governments + society-wide bonuses
         const civU = this.civics.accrue(tr, 1, this.rng);
         for (let ci = 0; ci < civU.length; ci++) {
           const c = civU[ci];
-          this.emit('civic', `${tr.name} adopts ${c.name}${c.gov ? ' — now a ' + this.civics.governmentName(tr) : ''}`, tr.capitalX, tr.capitalY, tr.hue);
+          this.emit('civic', `${tr.name}이(가) ${c.name}을(를) 채택합니다${c.gov ? ' — 이제 ' + this.civics.governmentName(tr) + '이(가) 되었습니다' : ''}`, tr.capitalX, tr.capitalY, tr.hue);
         }
         this.tech.recompute(tr);   // clean caps base from tech (idempotent)
         this.civics.apply(tr);     // fold civic + government multipliers on top
@@ -303,7 +303,7 @@ export class Sim {
         }
       }
       if (tr.members === 0 && !tr.isPlayer) {
-        this.emit('extinct', `${tr.name} has died out`, tr.capitalX, tr.capitalY, tr.hue);
+        this.emit('extinct', `${tr.name}이(가) 멸망했습니다`, tr.capitalX, tr.capitalY, tr.hue);
         this.tribes.delete(id);
       }
     }
@@ -671,7 +671,7 @@ export class Sim {
       const py = Math.max(1, Math.min(this.world.h - 2, y + this.rng.gauss(0, 2.5)));
       a.spawn(px, py, clone(founder, this.rng, 0.06, 0.3), tribe.id, this.rng, 0);
     }
-    this.emit('born', `A new people stirs: ${tribe.name}`, x, y, hue);
+    this.emit('born', `새로운 민족이 일어납니다: ${tribe.name}`, x, y, hue);
     return tribe;
   }
 

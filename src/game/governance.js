@@ -80,46 +80,47 @@ function cityCount(sim, tribe) {
 
 // ---- DESTINIES — opt-in win goals (the Civ victory loop) -------------------
 // Each: progress(sim,tribe)->0..1  and  done(sim,tribe)->bool.
+// `id`는 영문 식별자 (보존), `name`/`desc`만 한글.
 export const DESTINIES = [
   {
-    id: 'ascendant', name: 'The Ascendant People',
-    desc: 'Grow your nation to 200 souls.',
+    id: 'ascendant', name: '번영하는 민족',
+    desc: '국민 수를 200명까지 키우세요.',
     progress: (s, t) => clamp01(t.members / 200),
     done: (s, t) => t.members >= 200,
   },
   {
-    id: 'enlightened', name: 'The Enlightenment',
-    desc: 'Carry your people into the Information Age.',
+    id: 'enlightened', name: '계몽의 시대',
+    desc: '백성을 정보 시대까지 이끄세요.',
     progress: (s, t) => clamp01(eraOf(t) / 8),
     done: (s, t) => eraOf(t) >= 8,
   },
   {
-    id: 'conqueror', name: 'Dominion',
-    desc: 'Become the last nation left standing.',
+    id: 'conqueror', name: '패권',
+    desc: '마지막까지 남은 민족이 되세요.',
     progress: (s, t) => { const tot = totalMembers(s); return tot > 0 ? clamp01(t.members / tot) : 0; },
     done: (s, t) => t.members > 0 && livingOthers(s, t) === 0,
   },
   {
-    id: 'faithful', name: 'One True Faith',
-    desc: 'Spread your religion to three other nations.',
+    id: 'faithful', name: '하나의 신앙',
+    desc: '당신의 신앙을 네 개의 다른 민족에게 전파하세요.',
     progress: (s, t) => clamp01(faithSpread(s, t) / 4),
     done: (s, t) => faithSpread(s, t) >= 4,
   },
   {
-    id: 'builders', name: 'The Great Builders',
-    desc: 'Raise three Cities.',
+    id: 'builders', name: '위대한 건축가',
+    desc: '도시 세 곳을 건설하세요.',
     progress: (s, t) => clamp01(cityCount(s, t) / 3),
     done: (s, t) => cityCount(s, t) >= 3,
   },
   {
-    id: 'concord', name: 'The Grand Concord',
-    desc: 'Hold an alliance with every other living nation.',
+    id: 'concord', name: '위대한 화약',
+    desc: '살아있는 모든 다른 민족과 동맹을 유지하세요.',
     progress: (s, t) => { const lo = livingOthers(s, t); return lo === 0 ? 0 : clamp01(alliesCount(s, t) / lo); },
     done: (s, t) => { const lo = livingOthers(s, t); return lo >= 1 && alliesCount(s, t) >= lo; },
   },
   {
-    id: 'eternal', name: 'The Eternal Nation',
-    desc: 'Endure for 300 years.',
+    id: 'eternal', name: '영원한 민족',
+    desc: '300년을 견뎌내세요.',
     progress: (s, t) => clamp01(((s.year ? s.year() : 0) - (t.foundedYear || 0)) / 300),
     done: (s, t) => ((s.year ? s.year() : 0) - (t.foundedYear || 0)) >= 300,
   },
@@ -185,7 +186,7 @@ export class Governance {
     if (!tribe) return;
     this.rally(sim, tribe, x, y);
     tribe.foundIntent = { x: tribe.rally.x, y: tribe.rally.y, year: tribe.rally.year };
-    if (sim.emit) sim.emit('rally', `${tribe.name} sets out to settle new land`, tribe.rally.x, tribe.rally.y, tribe.hue);
+    if (sim.emit) sim.emit('rally', `${tribe.name}이(가) 새로운 땅에 정착하기 위해 출발합니다`, tribe.rally.x, tribe.rally.y, tribe.hue);
   }
 
   // diplomacy levers — delegate to the shared per-pair store.
@@ -290,7 +291,7 @@ export class Governance {
     }
     this._shift(from, give, -1); this._shift(to, give, +1);      // from → to
     this._shift(to, get, -1); this._shift(from, get, +1);        // to → from
-    if (sim.emit) sim.emit('trade', `${from.name} trades with ${to.name}`, from.capitalX, from.capitalY, from.hue);
+    if (sim.emit) sim.emit('trade', `${from.name}이(가) ${to.name}와(과) 교역합니다`, from.capitalX, from.capitalY, from.hue);
     return true;
   }
 
@@ -484,7 +485,7 @@ export class Governance {
       if (!d) continue;
       if (!tr._destinyDone && d.done(sim, tr)) {
         tr._destinyDone = true;
-        if (sim.emit) sim.emit('destiny', `${tr.name} achieve their destiny: ${d.name}`, tr.capitalX, tr.capitalY, tr.hue);
+        if (sim.emit) sim.emit('destiny', `${tr.name}이(가) 숙원을 이루어냅니다: ${d.name}`, tr.capitalX, tr.capitalY, tr.hue);
       }
     }
   }

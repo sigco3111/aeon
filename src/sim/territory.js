@@ -84,7 +84,7 @@ export class Territory {
           }
           this._reflag(W, owner, s.x, s.y, s.claimR, bestId); // the land changes banner
           s.tribeId = bestId; s.claimR = Math.max(4, s.claimR * 0.6);
-          sim.emit('conquest', `${newTr.name} seizes ${s.name}${oldTr ? ' from ' + oldTr.name : ''}`, s.x, s.y, newTr.hue);
+          sim.emit('conquest', `${newTr.name}이(가) ${s.name}을(를) 점령합니다${oldTr ? ' (' + oldTr.name + '에게서)' : ''}`, s.x, s.y, newTr.hue);
         }
       }
     }

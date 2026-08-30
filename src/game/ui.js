@@ -10,70 +10,116 @@
 import { N_IN, N_HID, N_OUT, W_IH, SENSE, ACT, GENE, gene } from '../sim/brain.js';
 import { hueToCss } from '../sim/tribe.js';
 import { TECHS, ERAS } from '../sim/tech.js';
+import { TIERS_KO } from '../sim/settlement.js';
+import { DESTINIES } from './governance.js';
+
+// 영문 enum → 한글 표시 매핑 (식별자 보존 원칙을 깨지 않으면서 화면만 한글로).
+// 인스펙터/배너에서 tribe name/desc/focus, settlement tier, destiny desc 등
+// 데이터 enum이 그대로 노출되는 모든 곳을 이 매핑으로 거친다.
+const STANCE_KO = { ally: '동맹', neutral: '중립', rival: '적대', war: '전쟁' };
+const DESTINY_KO = {};
+for (const d of DESTINIES) DESTINY_KO[d.id] = d.name;
+const HERITAGE_KO = { hardy: '강인함', fertile: '다산', martial: '무인', scholarly: '학자',
+  swift: '날쌘함', verdant: '녹음의 백성', seafaring: '바다의 백성' };
+const FOCUS_KO = { growth: '성장', build: '건축', military: '군사', gold: '금화', research: '연구' };
+// emit 메시지 안에 박힌 영문 enum (e.g. 'Village') → 한글 ('촌락') 후처리.
+// 게임 코드는 영문을 그대로 emit하지만 UI 토스트에서는 한글로 보여준다.
+const ENUM_KO = {
+  // TIERS
+  'Camp': '캠프', 'Village': '촌락', 'Town': '마을', 'City': '도시', 'Settlement': '정착지',
+  // 정책 title (POLICIES는 이미 한글 — ui.js에서 정의)
+  // 거버먼트 (citizens가 보지 않으므로)
+  'Chiefdom': '추장부', 'Confederacy': '동맹', 'Monarchy': '군주국', 'Theocracy': '신정정치',
+  'Republic': '공화국', 'Democracy': '민주주의', 'Autocracy': '전제정치',
+  // tech
+  'Fire': '불', 'StoneTools': '석기', 'Agriculture': '농업', 'AnimalHusbandry': '목축',
+  'Pottery': '토기', 'Wheel': '바퀴', 'Writing': '문자', 'Bronzeworking': '청동 제작',
+  'Sailing': '항해', 'Mathematics': '수학', 'Currency': '화폐', 'IronWorking': '철 제작',
+  'Masonry': '석조', 'Engineering': '공학', 'Medicine': '의술', 'Compass': '나침반',
+  'Gunpowder': '화약', 'Printing': '인쇄술', 'ScientificMethod': '과학적 방법',
+  'Steam': '증기 기관', 'Electricity': '전기', 'Industrialization': '공업화',
+  'Combustion': '내연 기관', 'Plastics': '플라스틱', 'Flight': '유인 비행', 'Computing': '컴퓨팅',
+};
+
+function localizeEnum(s) {
+  if (!s) return s;
+  // whole-word boundary matching (한국어 구간은 변경하지 않음)
+  let out = s;
+  for (const [en, ko] of Object.entries(ENUM_KO)) {
+    if (!en) continue;
+    // 영문 단어 단위로 교체 — 이미 한글이 섞인 영역에 영향 없음
+    out = out.replace(new RegExp(`(?<![A-Za-z가-힣])${en.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}(?![A-Za-z가-힣])`, 'g'), ko);
+  }
+  return out;
+}
 
 const $ = (id) => document.getElementById(id);
 
 // Single source of truth for the god tools: icon, label, hotkey, description.
 // Drives the dock labels, the hover tooltips, and the menu legend.
+// `hotkey`는 영문 키 (대문자 I/R/L/F/S/B/X/P — game.input.js에서 keys.has()로 매칭) → 보존.
+// `name`/`desc`는 한글 표시.
 const TOOL_INFO = {
-  inspect: { icon: '🔍', name: 'Inspect', hotkey: 'I', desc: 'Click a creature to open its brain & lineage, or a people to read the nation.' },
-  raise:   { icon: '⛰', name: 'Raise Land', hotkey: 'R', desc: 'Push terrain up — build hills, mountains and land bridges. Drag to sculpt.' },
-  lower:   { icon: '🌊', name: 'Lower / Water', hotkey: 'L', desc: 'Sink terrain — carve lakes, rivers and seas. Drag to flood.' },
-  forest:  { icon: '🌲', name: 'Forest', hotkey: 'F', desc: 'Grow trees and greenery that foragers feed on.' },
-  spawn:   { icon: '✿', name: 'Spawn Life', hotkey: 'S', desc: 'Seed a brand-new tribe of evolving minds where you click.' },
-  food:    { icon: '🍒', name: 'Bless Food', hotkey: 'B', desc: 'Scatter food to help a struggling people pull through lean times.' },
-  smite:   { icon: '⚡', name: 'Smite', hotkey: 'X', desc: 'Strike down everything in the blast — raw selection pressure.' },
-  possess: { icon: '👁', name: 'Possess', hotkey: 'P', desc: 'Descend into a single body and walk it yourself with WASD.' },
+  inspect: { icon: '🔍', name: '조사', hotkey: 'I', desc: '생물을 클릭해 그 뇌와 혈통을 보거나, 민족을 클릭해 그 이야기를 읽으세요.' },
+  raise:   { icon: '⛰', name: '땅 올리기', hotkey: 'R', desc: '지형을 밀어 올립니다 — 구릉, 산, 육지 다리를 만드세요. 드래그로 조각합니다.' },
+  lower:   { icon: '🌊', name: '내리기/물', hotkey: 'L', desc: '지형을 가라앉힙니다 — 호수, 강, 바다를 파세요. 드래그로 범람시키세요.' },
+  forest:  { icon: '🌲', name: '숲', hotkey: 'F', desc: '수집인들이 먹고사는 나무와 풀을 자라게 합니다.' },
+  spawn:   { icon: '✿', name: '생명 창조', hotkey: 'S', desc: '클릭한 자리에 진화하는 마음을 가진 새 부족을 심으세요.' },
+  food:    { icon: '🍒', name: '음식 축복', hotkey: 'B', desc: '고군분투하는 민족을 돕기 위해 식량을 흩뿌리세요.' },
+  smite:   { icon: '⚡', name: '내리침', hotkey: 'X', desc: '터지는 범위 안의 모든 것을 내리칩니다 — 가공할 자연 선택.' },
+  possess: { icon: '👁', name: '빙의', hotkey: 'P', desc: '한 몸에 내려타서 WASD로 직접 걸어보세요.' },
 };
 
 const CONTROLS = [
-  ['Scroll', 'zoom — one continuous space from orbit to the ground'],
-  ['Drag', 'pan the world'],
-  ['Shift+Drag', 'orbit the camera (3D view)'],
-  ['Space', 'pause / resume'],
-  ['1 – 5', 'simulation speed'],
-  ['[  ]', 'shrink / grow the tool brush'],
-  ['Esc', 'release a body · ascend · close panels'],
-  ['W A S D', 'move the body you possess'],
+  ['스크롤', '줌 — 궤도에서 지면까지 하나의 연속된 공간'],
+  ['드래그', '세계를 이동'],
+  ['Shift+드래그', '3D 뷰에서 카메라 궤도 회전'],
+  ['Space', '일시정지 / 재개'],
+  ['1 – 5', '시뮬레이션 속도'],
+  ['[  ]', '도구 붓 크기 줄이기 / 늘리기'],
+  ['Esc', '빙의 해제 · 승천 · 패널 닫기'],
+  ['W A S D', '빙의한 몸을 이동'],
 ];
 
 // Policy sliders: label, slider-end words, hover tip + a LIVE effect readout so
 // the player sees cause -> effect. The live text is derived from the value below.
+// `key` (영문, governance.js setPolicy/getPolicy에서 사용) → 보존.
+// `title`/`lo`/`hi`/`tip`은 한글 표시.
 const POLICIES = [
-  { key: 'aggression', title: 'War', lo: 'Pacifist', hi: 'Warlike',
-    tip: '<b>War footing</b> — push toward Warlike and your people raise more soldiers and strike rivals sooner; toward Pacifist they avoid fights and grow in peace.' },
-  { key: 'expansion', title: 'Expand', lo: 'Homebound', hi: 'Expansionist',
-    tip: '<b>Expansion</b> — Expansionist sends settlers out to claim land and found cities; Homebound keeps your people close and consolidated.' },
-  { key: 'breed', title: 'Growth', lo: 'Restraint', hi: 'Grow fast',
-    tip: '<b>Growth</b> — Grow fast means more births (and more mouths to feed); Restraint slows breeding to live within your food.' },
-  { key: 'research', title: 'Science', lo: 'Tradition', hi: 'Science',
-    tip: '<b>Science vs tradition</b> — Science speeds tech research at the cost of custom; Tradition deepens culture and faith but slows the tech tree.' },
+  { key: 'aggression', title: '전쟁', lo: '평화주의', hi: '호전적',
+    tip: '<b>전쟁 기조</b> — 호전적으로 갈수록 병사를 더 길러 적을 빨리 치고, 평화주의로 갈수록 싸움을 피하고 평화롭게 번성합니다.' },
+  { key: 'expansion', title: '확장', lo: '고수적', hi: '개척적',
+    tip: '<b>확장</b> — 개척적은 개척민을 보내 땅을 차지하고 도시를 세우며, 고수적은 백성을 가까이 모은 채 통합을 유지합니다.' },
+  { key: 'breed', title: '번식', lo: '절제', hi: '신속한 증가',
+    tip: '<b>번식</b> — 신속한 증가는 출산을 늘리지만(먹일 입도 늘어남), 절제는 식량 안에서 살도록 출산을 늦춥니다.' },
+  { key: 'research', title: '학문', lo: '전통', hi: '과학',
+    tip: '<b>학문 vs 전통</b> — 과학 쪽으로 가면 연구가 빨라지지만 풍속은 옅어지고, 전통은 문화와 신앙을 두텁게 하면서 기술 트리는 더디게 흐릅니다.' },
 ];
 
 // First-time Survival walkthrough (3–5 short, dismissible coach-marks).
 const TUTORIAL = [
-  { ico: '⚑', title: 'You lead this people',
-    body: 'You are their <b>ruler and lawgiver</b> — not a puppeteer. You set the policy and make the big calls; your neural-net citizens live their own lives within your rules. Step away and your council runs things the way you would.' },
-  { ico: '🖐', title: 'Move around the world',
-    body: '<b>Tap</b> anything to inspect it — a creature shows its living brain; a city or nation shows its story. <b>Drag</b> to pan, <b>scroll</b> to zoom from orbit down to the ground. In 3D view, hold <b>Shift</b> and drag to orbit.',
-    keys: ['Tap = inspect', 'Drag = pan', 'Scroll = zoom', 'Shift+Drag = orbit'] },
-  { ico: '🏛', title: 'Your three verbs',
-    body: '<b>Found</b> a city (10 gold) by clicking fertile land · <b>Command</b> your soldiers by drag-selecting then clicking a target · <b>Ascend</b> to step back out to a god\'s-eye view at any time.',
-    keys: ['🏛 Found', '⚔ Command', '↑ Ascend'] },
-  { ico: '🎚', title: 'Set the nation\'s will',
-    body: 'The <b>Policies</b> sliders are how you rule — war footing, expansion, growth, science. Each shows its live effect as you drag. Steer <b>Research</b> and <b>Diplomacy</b> from the tabs; the rest is up to your people\'s evolved minds.' },
-  { ico: '✦', title: 'Win — or fall',
-    body: 'Grow your people, climb the <b>tech tree</b>, adopt <b>civics</b>, and outlast your rivals. Pick a <b>Destiny</b> for a clear goal — reach enough souls, or be the last nation standing. If your people hit zero, it\'s over. Good luck.' },
+  { ico: '⚑', title: '당신이 이 민족을 이끕니다',
+    body: '당신은 <b>통치자이자 입법자</b>이지, 꼭두각시 인형술사가 아닙니다. 당신이 정책을 세우고 큰 결정을 내리면, 신경망 시민들이 그 안에서 각자의 삶을 살아갑니다. 손을 떼면 평의회가 당신의 뜻대로 국가를 운영합니다.' },
+  { ico: '🖐', title: '세계를 움직여 보세요',
+    body: '<b>클릭</b>으로 무엇이든 조사하세요 — 생물을 클릭하면 살아있는 뇌가, 도시나 민족을 클릭하면 그 이야기가 보입니다. <b>드래그</b>로 화면을 옮기고, <b>스크롤</b>로 궤도에서 지면까지 줌하세요. 3D 보기에서는 <b>Shift</b>를 누른 채 드래그해 카메라를 돌립니다.',
+    keys: ['탭 = 조사', '드래그 = 이동', '스크롤 = 줌', 'Shift+드래그 = 궤도 회전'] },
+  { ico: '🏛', title: '세 가지 핵심 행동',
+    body: '<b>도시 세우기</b>는 (금화 10으로) 비옥한 땅을 클릭하면 됩니다 · <b>지휘</b>는 병사들을 드래그로 선택한 뒤 목표를 클릭합니다 · <b>승천</b>은 언제라도 신의 시점으로 돌아갈 수 있습니다.',
+    keys: ['🏛 도시 세우기', '⚔ 지휘', '↑ 승천'] },
+  { ico: '🎚', title: '나라의 의지를 설정하세요',
+    body: '<b>정책</b> 슬라이더가 당신이 다스리는 방식입니다 — 전쟁 기조, 확장, 번식, 학문. 각 슬라이더는 드래그할 때 실시간 효과가 보입니다. <b>연구</b>와 <b>외교</b> 탭도 함께 조종하세요 — 나머지는 백성의 진화한 마음이 결정합니다.' },
+  { ico: '✦', title: '승리 — 혹은 멸망',
+    body: '국민을 키우고, <b>기술 트리</b>를 오르고, <b>시민 제도</b>를 채택하고, 라이벌보다 오래 살아남으세요. 명확한 목표를 원한다면 <b>숙원</b>을 선택하세요 — 충분한 수의 백성에 도달하거나, 마지막까지 남는 것이 목표입니다. 백성이 0이 되면 끝납니다. 행운을 빕니다.' },
 ];
 
 // Map a policy value (-1..1) to a short, human-readable effect line.
 function policyEffect(key, v) {
   const lvl = (lo, mid, hi) => (v <= -0.33 ? lo : v >= 0.33 ? hi : mid);
   const txt = {
-    aggression: lvl('peaceful — avoids war', 'balanced stance', 'aggressive — quick to fight'),
-    expansion: lvl('staying home', 'steady spread', 'expanding fast — settling outward'),
-    breed: lvl('careful breeding', 'natural growth', 'rapid growth — watch your food'),
-    research: lvl('tradition first', 'balanced', 'science first — faster tech'),
+    aggression: lvl('평화 — 전쟁을 피함', '균형 잡힌 입장', '호전적 — 싸움을 서슴지 않음'),
+    expansion: lvl('고향에 머묾', '고르게 퍼져감', '빠른 확장 — 바깥으로 세력을 넓힘'),
+    breed: lvl('신중한 출산', '자연스러운 성장', '빠른 증가 — 식량을 살피세요'),
+    research: lvl('전통 우선', '균형', '과학 우선 — 더 빠른 기술'),
   }[key] || '';
   return `<b>${(v * 100 | 0)}</b> · ${esc(txt)}`;
 }
@@ -179,7 +225,7 @@ export class UI {
   _sim() { return this.game ? this.game.sim : null; }
 
   setSpeed(speed) {
-    this.el.speed.textContent = speed === 0 ? '⏸ paused' : `▶ ${speed}×`;
+    this.el.speed.textContent = speed === 0 ? '⏸ 일시정지' : `▶ ${speed}×`;
     this.el.speed.classList.toggle('paused', speed === 0);
     this._syncMenu();
   }
@@ -192,12 +238,12 @@ export class UI {
   setMode(mode, tribe) {
     const b = this.el.modeBadge;
     if (mode === 'nation' && tribe) {
-      b.textContent = 'NATION'; b.className = 'mode-badge nation';
+      b.textContent = '민족'; b.className = 'mode-badge nation';
       b.style.background = hueToCss(tribe.hue, 60, 45);
       this._dismissOnboard();
       this._maybeTutorial(); // first time leading a people -> coach-marks
     } else {
-      b.textContent = 'GOD'; b.className = 'mode-badge god'; b.style.background = '';
+      b.textContent = '신'; b.className = 'mode-badge god'; b.style.background = '';
     }
   }
 
@@ -226,9 +272,9 @@ export class UI {
   updateBanners(tr) {
     const sim = this._sim(); if (!sim) return;
     const techs = (sim.tech && sim.tech.available) ? sim.tech.available(tr) : [];
-    this._setBanner('research-banner', 'Choose Research', techs, tr.tech ? tr.tech.points : 0);
+    this._setBanner('research-banner', '연구 선택', techs, tr.tech ? tr.tech.points : 0);
     const civics = (sim.civics && sim.civics.available) ? sim.civics.available(tr) : [];
-    this._setBanner('civic-banner', 'Choose a Civic', civics, tr.civics ? tr.civics.points : 0);
+    this._setBanner('civic-banner', '시민 제도 선택', civics, tr.civics ? tr.civics.points : 0);
   }
   _setBanner(id, prompt, avail, points) {
     const el = document.getElementById(id); if (!el) return;
@@ -260,23 +306,27 @@ export class UI {
     this.openAgent = a; this.openTribe = null;
     this.el.inspTitle.textContent = a.name;
     const traits = ['size', 'speed', 'metabolism', 'fertility', 'aggression', 'vision', 'diet', 'resilience'];
+    const TRAIT_KO = {
+      size: '체구', speed: '속도', metabolism: '신진대사', fertility: '출산력',
+      aggression: '공격성', vision: '시각', diet: '식성', resilience: '회복력'
+    };
     this.el.inspBody.innerHTML = `
       <div class="insp-sub" style="color:${hueToCss(tribe ? tribe.hue : a.hue)}">
-        ${tribe ? esc(tribe.name) : 'feral'} · gen ${a.generation}
+        ${tribe ? esc(tribe.name) : '야생'} · ${a.generation}세대
       </div>
       <div class="brainwrap"><canvas id="brain-cv" width="260" height="150"></canvas>
-        <div class="brain-cap">its mind — blue excites, red inhibits</div></div>
+        <div class="brain-cap">이 생물의 마음 — 파란색은 흥분, 빨간색은 억제</div></div>
       <div id="agent-vitals"></div>
-      <div class="trait-head">heritable traits</div>
+      <div class="trait-head">유전 형질</div>
       <div id="agent-traits">
         ${traits.map((t) => `
-          <div class="trait"><span class="trait-name">${t}</span>
+          <div class="trait"><span class="trait-name">${TRAIT_KO[t] || t}</span>
           <span class="trait-bar"><i style="width:${(gene(a.genome, t === 'diet' ? 'diet' : t) * 100).toFixed(0)}%;
             background:${traitColor(t)}"></i></span></div>`).join('')}
       </div>
       <div class="insp-actions">
-        <button id="act-possess">👁 Descend into this body</button>
-        ${tribe ? `<button id="act-playas">⚑ Lead ${esc(tribe.name)}</button>` : ''}
+        <button id="act-possess">👁 이 몸에 빙의</button>
+        ${tribe ? `<button id="act-playas">⚑ ${esc(tribe.name)} 통치</button>` : ''}
       </div>`;
     this.brainCv = $('brain-cv');
     this.drawBrain(a);
@@ -289,10 +339,10 @@ export class UI {
     const a = this.openAgent;
     const v = $('agent-vitals'); if (!v) return;
     v.innerHTML = `
-      <div class="vital"><span>energy</span><span class="vbar"><i style="width:${(a.energy * 83).toFixed(0)}%;background:#e8c84a"></i></span></div>
-      <div class="vital"><span>health</span><span class="vbar"><i style="width:${(a.health * 100).toFixed(0)}%;background:#5ad06a"></i></span></div>
-      <div class="vital"><span>age</span><span class="vbar"><i style="width:${(a.age / a.maxAge * 100).toFixed(0)}%;background:#9aa"></i></span></div>
-      <div class="vrow"><span>offspring ${a.offspring}</span><span>fitness ${a.fitness.toFixed(1)}</span></div>`;
+      <div class="vital"><span>체력</span><span class="vbar"><i style="width:${(a.energy * 83).toFixed(0)}%;background:#e8c84a"></i></span></div>
+      <div class="vital"><span>건강</span><span class="vbar"><i style="width:${(a.health * 100).toFixed(0)}%;background:#5ad06a"></i></span></div>
+      <div class="vital"><span>나이</span><span class="vbar"><i style="width:${(a.age / a.maxAge * 100).toFixed(0)}%;background:#9aa"></i></span></div>
+      <div class="vrow"><span>자손 ${a.offspring}</span><span>적응도 ${a.fitness.toFixed(1)}</span></div>`;
   }
 
   markDead() {
@@ -350,35 +400,36 @@ export class UI {
     const me = game.playerTribe;
     const isMine = me && me.id === tr.id;
     const foreign = me && !isMine;
+    const STANCE_KO = { ally: '동맹', neutral: '중립', rival: '적대', war: '전쟁' };
     let actions;
     if (isMine) {
-      actions = `<div class="insp-sub" style="color:${hueToCss(tr.hue)}">★ your nation</div>
+      actions = `<div class="insp-sub" style="color:${hueToCss(tr.hue)}">★ 당신의 민족</div>
         <div id="tribe-stats"></div>
-        <div class="insp-actions"><button id="act-possess2">👁 Possess a citizen</button></div>`;
+        <div class="insp-actions"><button id="act-possess2">👁 시민 한 명에게 빙의</button></div>`;
     } else if (foreign) {
       const st = this._stance(me, tr);
-      actions = `<div class="insp-sub" style="color:${hueToCss(tr.hue)}">a rival people — <span class="stance-badge stance-${st}">${st}</span></div>
+      actions = `<div class="insp-sub" style="color:${hueToCss(tr.hue)}">라이벌 민족 — <span class="stance-badge stance-${st}">${STANCE_KO[st] || st}</span></div>
         <div id="tribe-stats"></div>
-        <div class="trait-head">diplomacy</div>
+        <div class="trait-head">외교</div>
         <div class="insp-diplo">
-          <button class="dbtn war" data-d="war">⚔ War</button>
-          <button class="dbtn peace" data-d="peace">☮ Peace</button>
-          <button class="dbtn ally" data-d="ally">🤝 Ally</button>
+          <button class="dbtn war" data-d="war">⚔ 선전포고</button>
+          <button class="dbtn peace" data-d="peace">☮ 강화</button>
+          <button class="dbtn ally" data-d="ally">🤝 동맹 제안</button>
         </div>
-        <div class="trait-head">trade (gold → their goods)</div>
+        <div class="trait-head">교역 (금화 → 그들의 물자)</div>
         <div class="insp-diplo">
           <button class="tbtn" data-buy="wood">🪵 8 · 6g</button>
           <button class="tbtn" data-buy="stone">🪨 8 · 8g</button>
           <button class="tbtn" data-buy="metal">⚒ 6 · 18g</button>
         </div>
-        <div class="insp-actions"><button id="act-possess2">👁 Possess a citizen</button></div>`;
+        <div class="insp-actions"><button id="act-possess2">👁 시민 한 명에게 빙의</button></div>`;
     } else {
       // no player nation yet (Creative / observing) — offer to take them
-      actions = `<div class="insp-sub" style="color:${hueToCss(tr.hue)}">a nation of evolving minds</div>
+      actions = `<div class="insp-sub" style="color:${hueToCss(tr.hue)}">진화하는 마음의 한 민족</div>
         <div id="tribe-stats"></div>
         <div class="insp-actions">
-          <button id="act-playas2">⚑ Play as this nation</button>
-          <button id="act-possess2">👁 Possess a citizen</button>
+          <button id="act-playas2">⚑ 이 민족을 통치</button>
+          <button id="act-possess2">👁 시민 한 명에게 빙의</button>
         </div>`;
     }
     this.el.inspBody.innerHTML = actions;
@@ -396,12 +447,13 @@ export class UI {
         };
       });
       const TRADES = { wood: { gold: 6, amt: 8 }, stone: { gold: 8, amt: 8 }, metal: { gold: 18, amt: 6 } };
+      const TRADE_NAME = { wood: '목재', stone: '돌', metal: '가공된 금속' };
       this.el.inspBody.querySelectorAll('.tbtn').forEach((b) => {
         b.onclick = () => {
           const g = this._gov('proposeTrade'); if (!g) return;
           const r = b.dataset.buy, deal = TRADES[r];
           const ok = g.proposeTrade(this._sim(), me, tr, { gold: deal.gold }, { [r]: deal.amt });
-          this.toast({ type: ok ? 'info' : 'extinct', msg: ok ? `Bought ${deal.amt} ${r} from ${tr.name}` : `${tr.name} declines the trade` });
+          this.toast({ type: ok ? 'info' : 'extinct', msg: ok ? `${tr.name}에게서 ${TRADE_NAME[r]} ${deal.amt}을(를) 구매했습니다` : `${tr.name}이(가) 교역을 거절합니다` });
         };
       });
     }
@@ -412,36 +464,39 @@ export class UI {
     this.openTribe = tr || null; this.openAgent = null;
     const tier = (typeof s.tier === 'number') ? s.tier : 0;
     const tierName = ['Camp', 'Village', 'Town', 'City'][tier] || 'Settlement';
+    const tierNameKo = ['캠프', '촌락', '마을', '도시'][tier] || '정착지';
     const hue = tr ? tr.hue : 200;
     const me = game.playerTribe;
     const mine = me && tr && me.id === tr.id;
     const blds = (s.buildings || []).reduce((m, b) => { m[b.type] = (m[b.type] || 0) + 1; return m; }, {});
-    const bldList = Object.keys(blds).map((k) => `${k}×${blds[k]}`).join(', ') || 'open ground';
-    this.el.inspTitle.textContent = (s.name && s.name !== (tr && tr.name)) ? s.name : tierName;
+    const bldList = Object.keys(blds).map((k) => `${k}×${blds[k]}`).join(', ') || '빈 터';
+    this.el.inspTitle.textContent = (s.name && s.name !== (tr && tr.name)) ? s.name : tierNameKo;
+    const FOCUS_KO = { growth: '성장', build: '건축', military: '군사', gold: '금화', research: '연구' };
+    const focusKo = FOCUS_KO[s.focus] || s.focus || '성장';
     this.el.inspBody.innerHTML = `
-      <div class="insp-sub" style="color:${hueToCss(hue)}">${tierName}${tr ? ' · ' + esc(tr.name) : ''}${mine ? ' ★' : ''}</div>
-      <div class="vrow"><span>tier</span><span>${tierName}</span></div>
-      <div class="vrow"><span>nation</span><span>${tr ? esc(tr.name) : '—'}</span></div>
-      <div class="vrow"><span>era</span><span>${esc(this._eraName(tr))}</span></div>
-      <div class="vrow"><span>population</span><span>${tr ? tr.members : '—'}</span></div>
-      <div class="trait-head">structures</div>
+      <div class="insp-sub" style="color:${hueToCss(hue)}">${tierNameKo}${tr ? ' · ' + esc(tr.name) : ''}${mine ? ' ★' : ''}</div>
+      <div class="vrow"><span>단계</span><span>${tierNameKo}</span></div>
+      <div class="vrow"><span>민족</span><span>${tr ? esc(tr.name) : '—'}</span></div>
+      <div class="vrow"><span>시대</span><span>${esc(this._eraName(tr))}</span></div>
+      <div class="vrow"><span>인구</span><span>${tr ? tr.members : '—'}</span></div>
+      <div class="trait-head">건축물</div>
       <div class="settle-blds">${esc(bldList)}</div>
-      ${mine ? `<div class="trait-head">city focus — <b>${esc(s.focus || 'growth')}</b>${s.defense ? ' · walls ' + (s.defense | 0) : ''}</div>
+      ${mine ? `<div class="trait-head">도시 초점 — <b>${esc(focusKo)}</b>${s.defense ? ' · 성벽 ' + (s.defense | 0) : ''}</div>
       <div class="insp-diplo">
-        <button class="fbtn" data-f="growth" title="Grow population">🌱</button>
-        <button class="fbtn" data-f="build" title="Build walls / defense">🏛</button>
-        <button class="fbtn" data-f="military" title="Train soldiers">⚔</button>
-        <button class="fbtn" data-f="gold" title="Generate gold">🪙</button>
-        <button class="fbtn" data-f="research" title="Focus research">🔬</button>
+        <button class="fbtn" data-f="growth" title="인구 성장">🌱</button>
+        <button class="fbtn" data-f="build" title="성벽 / 방어 건설">🏛</button>
+        <button class="fbtn" data-f="military" title="병사 훈련">⚔</button>
+        <button class="fbtn" data-f="gold" title="금화 생산">🪙</button>
+        <button class="fbtn" data-f="research" title="연구에 집중">🔬</button>
       </div>` : ''}
       <div class="insp-actions">
         ${tr ? (mine
-          ? `<button id="act-focus">⚑ Lead your nation</button>`
-          : (me ? `<button id="act-war2" class="dbtn war">⚔ War on ${esc(tr.name)}</button>` : `<button id="act-playas3">⚑ Play as ${esc(tr.name)}</button>`)) : ''}
+          ? `<button id="act-focus">⚑ 통치 패널 열기</button>`
+          : (me ? `<button id="act-war2" class="dbtn war">⚔ ${esc(tr.name)}에 선전포고</button>` : `<button id="act-playas3">⚑ ${esc(tr.name)} 통치</button>`)) : ''}
       </div>`;
     const f = $('act-focus'); if (f) f.onclick = () => { game.cam.setTarget(s.x, s.y, Math.max(game.cam.zoom, 9)); this.setNationTab('policies'); };
     this.el.inspBody.querySelectorAll('.fbtn').forEach((b) => {
-      b.onclick = () => { s.focus = b.dataset.f; this.renderSettlement(s, tr, game); this.toast({ type: 'info', msg: `${s.name || 'City'}: ${s.focus} focus` }); };
+      b.onclick = () => { s.focus = b.dataset.f; this.renderSettlement(s, tr, game); this.toast({ type: 'info', msg: `${s.name || '도시'}: ${FOCUS_KO[b.dataset.f] || b.dataset.f} 초점` }); };
     });
     const pa = $('act-playas3'); if (pa) pa.onclick = () => game.playAsTribe(tr);
     const w = $('act-war2'); if (w) w.onclick = () => { const g = this._gov('declareWar'); if (g && me && tr) g.declareWar(this._sim(), me, tr); };
@@ -453,22 +508,22 @@ export class UI {
     const faith = tr.religion ? tr.religion.name : '—';
     const sim = this._sim();
     const land = (sim && sim.territory) ? sim.territory.areaOf(tr.id) : 0;
-    const govt = (sim && sim.civics) ? sim.civics.governmentName(tr) : 'Chiefdom';
-    const ethos = tr.ethosName && tr.ethosName !== '—' ? tr.ethosName : 'forming';
+    const govt = (sim && sim.civics) ? sim.civics.governmentName(tr) : '추장부';
+    const ethos = tr.ethosName && tr.ethosName !== '—' ? tr.ethosName : '형성 중';
     const custom = (tr.customs && tr.customs.length) ? tr.customs[0] : '—';
     el.innerHTML = `
-      <div class="vrow"><span>era</span><span>${esc(era)}</span></div>
-      <div class="vrow"><span>government</span><span>${esc(govt)}</span></div>
-      <div class="vrow"><span>ethos</span><span>${esc(ethos)}</span></div>
-      <div class="vrow"><span>custom</span><span>${esc(custom)}</span></div>
-      <div class="vrow"><span>population</span><span>${tr.members}</span></div>
-      <div class="vrow"><span>territory</span><span>${land} tiles</span></div>
-      <div class="vrow"><span>peak</span><span>${tr.peakMembers}</span></div>
-      <div class="vrow"><span>births / deaths</span><span>${tr.births} / ${tr.deaths}</span></div>
-      <div class="vrow"><span>battles won</span><span>${tr.kills}</span></div>
-      <div class="vrow"><span>culture</span><span>${tr.culture.toFixed(1)}</span></div>
-      <div class="vrow"><span>faith</span><span>${esc(faith)}</span></div>
-      <div class="vrow"><span>founded</span><span>year ${tr.foundedYear}</span></div>`;
+      <div class="vrow"><span>시대</span><span>${esc(era)}</span></div>
+      <div class="vrow"><span>정치 체제</span><span>${esc(govt)}</span></div>
+      <div class="vrow"><span>민족 기풍</span><span>${esc(ethos)}</span></div>
+      <div class="vrow"><span>관습</span><span>${esc(custom)}</span></div>
+      <div class="vrow"><span>인구</span><span>${tr.members}</span></div>
+      <div class="vrow"><span>영토</span><span>${land} 타일</span></div>
+      <div class="vrow"><span>최대 인구</span><span>${tr.peakMembers}</span></div>
+      <div class="vrow"><span>출생 / 사망</span><span>${tr.births} / ${tr.deaths}</span></div>
+      <div class="vrow"><span>전투 승리</span><span>${tr.kills}</span></div>
+      <div class="vrow"><span>문화</span><span>${tr.culture.toFixed(1)}</span></div>
+      <div class="vrow"><span>신앙</span><span>${esc(faith)}</span></div>
+      <div class="vrow"><span>건국</span><span>${tr.foundedYear}년</span></div>`;
   }
 
   // ---- nation control HUD ----------------------------------------------
@@ -526,15 +581,15 @@ export class UI {
     const avail = (sim && sim.tech && typeof sim.tech.available === 'function') ? sim.tech.available(tr) : [];
     this._researchSig = avail.map((d) => d.id).join(',');
     const prio = this._priority(tr);
-    const opts = [`<option value="">Auto — climb the cheapest branch</option>`]
+    const opts = [`<option value="">자동 — 가장 싼 가지를 탐구</option>`]
       .concat(avail.map((d) =>
         `<option value="${d.id}"${d.id === prio ? ' selected' : ''}>${esc(d.name)} · ${esc(this._eraNameOf(d.era))}</option>`))
       .join('');
     this.el.nationResearch.innerHTML = `
       <div class="nation-line" id="research-line"></div>
-      <label class="pick-label">Prioritize research</label>
+      <label class="pick-label">연구 우선 과제</label>
       <select class="picker" id="tech-pick">${opts}</select>
-      <div class="pick-hint">Bias what your people study next — they still need the population and culture to afford it.</div>`;
+      <div class="pick-hint">백성이 다음으로 무엇을 연구할지 우선순위를 두세요 — 그래도 인구와 문화라는 조건은 따라옵니다.</div>`;
     const sel = $('tech-pick');
     sel.onchange = () => this._setPriority(sel.value || null);
     this._refreshResearchLine(tr);
@@ -544,7 +599,7 @@ export class UI {
     const line = $('research-line'); if (!line) return;
     const known = (tr.tech && tr.tech.known) ? tr.tech.known.size : 0;
     const pts = (tr.tech && typeof tr.tech.points === 'number') ? Math.floor(tr.tech.points) : 0;
-    line.innerHTML = `<span>${esc(this._eraName(tr))}</span><span>${known} / ${TECHS.length} techs · ${pts} pts</span>`;
+    line.innerHTML = `<span>${esc(this._eraName(tr))}</span><span>${known} / ${TECHS.length} 기술 · ${pts} 점</span>`;
   }
 
   _priority(tr) {
@@ -565,26 +620,28 @@ export class UI {
     const others = this._otherTribes(tr);
     this._diploSig = others.map((t) => t.id).join(',');
     const govReady = !!this._gov('declareWar') || !!this._gov('setStance');
+    const STANCE_KO = { ally: '동맹', neutral: '중립', rival: '적대', war: '전쟁' };
     if (!others.length) {
-      this.el.nationDiplo.innerHTML = `<div class="empty-note">No other nations stir in the world — you stand alone.</div>`;
+      this.el.nationDiplo.innerHTML = `<div class="empty-note">세상에 다른 민족이 없습니다 — 당신만 홀로 서 있습니다.</div>`;
       return;
     }
     const rows = others.map((t) => {
       const st = this._stance(tr, t);
+      const stKo = STANCE_KO[st] || st;
       return `<div class="diplo-row" data-tid="${t.id}">
         <span class="swatch" style="background:${hueToCss(t.hue)}"></span>
         <span class="diplo-name">${esc(t.name)}</span>
-        <span class="stance-badge stance-${st}" data-stance>${st}</span>
+        <span class="stance-badge stance-${st}" data-stance>${stKo}</span>
         <span class="diplo-meta" data-meta></span>
         <span class="diplo-btns">
-          <button class="dbtn war" data-act="war" data-tid="${t.id}" title="Declare war">⚔</button>
-          <button class="dbtn peace" data-act="peace" data-tid="${t.id}" title="Make peace">☮</button>
-          <button class="dbtn ally" data-act="ally" data-tid="${t.id}" title="Propose alliance">🤝</button>
-          <button class="dbtn" data-act="neutral" data-tid="${t.id}" title="Set neutral">•</button>
+          <button class="dbtn war" data-act="war" data-tid="${t.id}" title="선전포고">⚔</button>
+          <button class="dbtn peace" data-act="peace" data-tid="${t.id}" title="강화">☮</button>
+          <button class="dbtn ally" data-act="ally" data-tid="${t.id}" title="동맹 제안">🤝</button>
+          <button class="dbtn" data-act="neutral" data-tid="${t.id}" title="중립으로">•</button>
         </span></div>`;
     }).join('');
     this.el.nationDiplo.innerHTML =
-      (govReady ? '' : `<div class="empty-note warn">Diplomacy goes live when statecraft is online; stances shown are read-only for now.</div>`) +
+      (govReady ? '' : `<div class="empty-note warn">외교 기능은 정치 시스템이 활성화되면 켜집니다 — 현재 자세를 읽기 전용으로 표시합니다.</div>`) +
       rows;
     if (!govReady) this.el.nationDiplo.querySelectorAll('.dbtn').forEach((b) => { b.disabled = true; });
     this._refreshDiplo(tr);
@@ -592,16 +649,17 @@ export class UI {
 
   _refreshDiplo(tr) {
     const sim = this._sim();
+    const STANCE_KO = { ally: '동맹', neutral: '중립', rival: '적대', war: '전쟁' };
     this.el.nationDiplo.querySelectorAll('.diplo-row').forEach((row) => {
       const t = sim && sim.tribes ? sim.tribes.get(+row.dataset.tid) : null;
       if (!t) return;
       const st = this._stance(tr, t);
       const badge = row.querySelector('[data-stance]');
-      if (badge) { badge.textContent = st; badge.className = `stance-badge stance-${st}`; }
+      if (badge) { badge.textContent = STANCE_KO[st] || st; badge.className = `stance-badge stance-${st}`; }
       const meta = row.querySelector('[data-meta]');
       if (meta) {
         const wp = this._warPressure(t, tr); // pressure THEY feel toward us
-        meta.textContent = (wp != null) ? `risk ${wp.toFixed(0)}` : `${t.members}`;
+        meta.textContent = (wp != null) ? `위험도 ${wp.toFixed(0)}` : `${t.members}`;
       }
     });
   }
@@ -624,15 +682,15 @@ export class UI {
   buildDestiny(tr) {
     const list = this._destinies();
     if (!list.length) {
-      this.el.nationDestiny.innerHTML = `<div class="empty-note">Destinies (opt-in win goals) activate when statecraft is online.</div>`;
+      this.el.nationDestiny.innerHTML = `<div class="empty-note">숙원(승리 목표 선택)은 정치 시스템이 활성화되면 켜집니다.</div>`;
       return;
     }
     const chosen = this._chosenDestiny(tr);
-    const opts = [`<option value="">No destiny — just live</option>`]
+    const opts = [`<option value="">숙원 없음 — 그냥 살아남기</option>`]
       .concat(list.map((d) => `<option value="${d.id}"${d.id === chosen ? ' selected' : ''}>${esc(d.name)}</option>`))
       .join('');
     this.el.nationDestiny.innerHTML = `
-      <label class="pick-label">Chosen destiny</label>
+      <label class="pick-label">선택한 숙원</label>
       <select class="picker" id="destiny-pick">${opts}</select>
       <div class="pick-hint" id="destiny-desc"></div>
       <div class="destiny-prog"><span class="destiny-bar"><i id="destiny-bar"></i></span><span id="destiny-pct">—</span></div>`;
@@ -650,7 +708,7 @@ export class UI {
     const def = this._destinies().find((d) => d.id === (sel.value || this._chosenDestiny(tr)));
     const desc = $('destiny-desc'), bar = $('destiny-bar'), pct = $('destiny-pct');
     if (!def) {
-      if (desc) desc.textContent = 'Pick a long-game goal to chase — or none, and simply endure.';
+      if (desc) desc.textContent = '오래 살아남는 것을 목표로 삼거나, 아니면 그냥 버텨내세요.';
       if (bar) bar.style.width = '0%';
       if (pct) pct.textContent = '—';
       return;
@@ -659,29 +717,29 @@ export class UI {
     const done = this._destinyDone(def, tr);
     if (desc) desc.textContent = def.desc || '';
     if (bar) bar.style.width = `${(p * 100).toFixed(0)}%`;
-    if (pct) pct.textContent = done ? '✓ fulfilled' : `${(p * 100).toFixed(0)}%`;
+    if (pct) pct.textContent = done ? '✓ 달성' : `${(p * 100).toFixed(0)}%`;
   }
 
   // live header + stats + tab refresh while leading
   refreshNationBar() {
     const tr = this.game.playerTribe; if (!tr) return;
-    this.el.nationName.textContent = `${tr.name} — ${tr.members} souls`;
+    this.el.nationName.textContent = `${tr.name} — ${tr.members}명의 백성`;
     // stats line
     const settle = this._settlementCount(tr.id);
-    const faith = tr.religion ? tr.religion.name : 'none';
+    const faith = tr.religion ? tr.religion.name : '없음';
     const st = tr.stock || { wood: 0, stone: 0, ore: 0 };
     const sim = this._sim();
-    const govt = (sim && sim.civics) ? sim.civics.governmentName(tr) : 'Chiefdom';
+    const govt = (sim && sim.civics) ? sim.civics.governmentName(tr) : '추장부';
     this.el.nationStats.innerHTML = `
       <span class="nstat">${esc(this._eraName(tr))}</span>
-      <span class="nstat" title="government">⚖ ${esc(govt)}</span>
+      <span class="nstat" title="정치 체제">⚖ ${esc(govt)}</span>
       <span class="nstat">◉ ${tr.members}</span>
       <span class="nstat">⌂ ${settle}</span>
-      <span class="nstat" title="wood">🪵 ${st.wood | 0}</span>
-      <span class="nstat" title="stone">🪨 ${st.stone | 0}</span>
-      <span class="nstat" title="ore">⛏ ${st.ore | 0}</span>
-      <span class="nstat" title="refined metal">⚒ ${st.metal | 0}</span>
-      <span class="nstat">✦ ${faith === 'none' ? 'no faith' : esc(faith)}</span>`;
+      <span class="nstat" title="목재">🪵 ${st.wood | 0}</span>
+      <span class="nstat" title="돌">🪨 ${st.stone | 0}</span>
+      <span class="nstat" title="광석">⛏ ${st.ore | 0}</span>
+      <span class="nstat" title="가공된 금속">⚒ ${st.metal | 0}</span>
+      <span class="nstat">✦ ${faith === '없음' ? '신앙 없음' : esc(faith)}</span>`;
     // rebuild lists only when their membership/availability actually changed
     const others = this._otherTribes(tr);
     const dsig = others.map((t) => t.id).join(',');
@@ -717,7 +775,7 @@ export class UI {
       this._natSig = sig;
       this._natRows.clear();
       if (!living.length) {
-        this.el.nationsList.innerHTML = `<div class="empty-note">No nations live right now. Use ✿ Spawn Life to seed a people.</div>`;
+        this.el.nationsList.innerHTML = `<div class="empty-note">아직 살아있는 민족이 없습니다. ✿ 생명 창조 도구로 한 민족을 심어보세요.</div>`;
         return;
       }
       this.el.nationsList.innerHTML = living.map((t) => `
@@ -728,9 +786,9 @@ export class UI {
               <span class="nat-meta" data-meta></span></span>
           </button>
           <div class="nat-acts hidden">
-            <button class="nat-act" data-act="playas" data-tid="${t.id}">⚑ Play as</button>
-            <button class="nat-act" data-act="watch" data-tid="${t.id}">🎥 Watch</button>
-            <button class="nat-act" data-act="possess" data-tid="${t.id}">👁 Possess</button>
+            <button class="nat-act" data-act="playas" data-tid="${t.id}">⚑ 통치</button>
+            <button class="nat-act" data-act="watch" data-tid="${t.id}">🎥 관찰</button>
+            <button class="nat-act" data-act="possess" data-tid="${t.id}">👁 빙의</button>
           </div>
         </div>`).join('');
       this.el.nationsList.querySelectorAll('.nat-row').forEach((row) =>
@@ -741,7 +799,7 @@ export class UI {
       const t = sim.tribes.get(tid);
       if (!t || !metaEl) continue;
       const faith = t.religion ? ' · ' + t.religion.name : '';
-      metaEl.textContent = `${this._eraName(t)} · ${t.members} souls${faith}`;
+      metaEl.textContent = `${this._eraName(t)} · ${t.members}명${faith}`;
     }
   }
 
@@ -777,7 +835,7 @@ export class UI {
     const sim = this._sim();
     const a = sim.pool.agents.find((x) => x.alive && x.tribeId === tid);
     if (a) this.game.possess(a);
-    else this.toast({ type: 'info', msg: 'That people has no living citizen to possess.' });
+    else this.toast({ type: 'info', msg: '그 민족에는 빙의할 살아있는 시민이 없습니다.' });
   }
 
   // ---- menu ------------------------------------------------------------
@@ -799,26 +857,26 @@ export class UI {
       `<div class="legend-row ctl"><span class="legend-key wide">${esc(k)}</span><span class="legend-desc">${esc(d)}</span></div>`).join('');
     this.el.menuCard.innerHTML = `
       <div class="menu-head"><h2>AEON</h2><button class="panel-close" id="menu-close">✕</button></div>
-      <p class="menu-about">A living world where every creature thinks with its own evolving neural network. You are its god — and you can descend to lead any one nation. Local-only; nothing leaves your machine.</p>
-      <div class="menu-section"><h3>World</h3>
+      <p class="menu-about">진화하는 마음들이 사는 살아있는 세계. 당신은 이 세계의 신이며, 어느 한 민족에 내려가 그 지도자가 될 수도 있습니다. 모든 처리가 사용자 컴퓨터 안에서만 돌아갑니다 — 외부로 나가는 데이터는 없습니다.</p>
+      <div class="menu-section"><h3>세계</h3>
         <div class="menu-btns">
-          <button class="menu-btn" id="menu-restart">🌍 Restart World (new seed)</button>
-          <button class="menu-btn" id="menu-pause">⏸ Pause</button>
-          <button class="menu-btn" id="menu-speed">▶ Speed</button>
-          <button class="menu-btn" id="menu-nations">⚑ Choose a Nation</button>
+          <button class="menu-btn" id="menu-restart">🌍 세계 새로 시작 (새 시드)</button>
+          <button class="menu-btn" id="menu-pause">⏸ 일시정지</button>
+          <button class="menu-btn" id="menu-speed">▶ 속도</button>
+          <button class="menu-btn" id="menu-nations">⚑ 민족 선택</button>
         </div>
       </div>
-      <div class="menu-section"><h3>Lead a nation</h3>
-        <p class="menu-tip">Open <b>⚑ Nations</b> (top bar) or click any people on the map, then <b>Play as</b> to lead them. Set their will with the policy sliders, steer research &amp; diplomacy, and pick a destiny to chase. You guide; their own brains decide.</p>
+      <div class="menu-section"><h3>민족을 이끌기</h3>
+      <p class="menu-tip">상단 바의 <b>⚑ 민족</b>을 열거나 지도 위의 한 민족을 클릭한 뒤 <b>통치</b>를 선택해 백성을 이끄세요. 정책 슬라이더로 의지를 정하고, 연구·외교를 조종하며, 숙원을 골라 한 방향으로 나아가게 합니다. 당신은 길잡이이고, 결정은 각자의 진화한 마음이 내립니다.</p>
         <div class="menu-btns" style="margin-top:9px;">
-          <button class="menu-btn" id="menu-howto">❔ How to play</button>
-          <button class="menu-btn" id="menu-tutorial">🎓 Replay walkthrough</button>
+          <button class="menu-btn" id="menu-howto">❔ 플레이 방법</button>
+          <button class="menu-btn" id="menu-tutorial">🎓 둘러보기 다시 재생</button>
         </div>
       </div>
-      <div class="menu-section"><h3>Controls</h3><div class="legend">${controls}</div></div>
-      <div class="menu-section"><h3>The Divine Hand</h3><div class="legend">${tools}</div></div>`;
+      <div class="menu-section"><h3>조작</h3><div class="legend">${controls}</div></div>
+      <div class="menu-section"><h3>신의 손</h3><div class="legend">${tools}</div></div>`;
     $('menu-close').onclick = () => this.closeMenu();
-    $('menu-restart').onclick = () => { if (confirm('Restart the world with a new seed? The current world will be lost.')) location.reload(); };
+    $('menu-restart').onclick = () => { if (confirm('새 시드로 세계를 새로 시작합니다. 현재 세계는 사라집니다. 계속할까요?')) location.reload(); };
     $('menu-pause').onclick = () => { if (this.game) { this.game.togglePause(); this._syncMenu(); } };
     $('menu-speed').onclick = () => { if (this.game) { this.game.cycleSpeed(); this._syncMenu(); } };
     $('menu-nations').onclick = () => { this.closeMenu(); this.openNations(); };
@@ -829,8 +887,8 @@ export class UI {
   _syncMenu() {
     const sp = this.game ? this.game.speed : 1;
     const pb = $('menu-pause'), sb = $('menu-speed');
-    if (pb) pb.textContent = sp === 0 ? '▶ Resume' : '⏸ Pause';
-    if (sb) sb.textContent = sp === 0 ? '▶ Speed' : `▶ Speed ${sp}×`;
+    if (pb) pb.textContent = sp === 0 ? '▶ 재개' : '⏸ 일시정지';
+    if (sb) sb.textContent = sp === 0 ? '▶ 속도' : `▶ 속도 ${sp}×`;
   }
 
   // ---- onboarding hint -------------------------------------------------
@@ -842,8 +900,8 @@ export class UI {
     this._onboardShown = true;
     const d = document.createElement('div');
     d.id = 'onboard';
-    d.innerHTML = `<span>Pick a nation to lead — open <b>⚑ Nations</b> or click a people — or just shape the world as a god.</span>
-      <button id="onboard-x" aria-label="dismiss">✕</button>`;
+    d.innerHTML = `<span>이끌 민족을 골라보세요 — 상단의 <b>⚑ 민족</b>을 열거나 지도 위의 한 민족을 클릭하면 됩니다. 신의 시점으로 세계를 조각하는 것도 가능합니다.</span>
+      <button id="onboard-x" aria-label="닫기">✕</button>`;
     this.el.hud.appendChild(d);
     requestAnimationFrame(() => d.classList.add('show'));
     $('onboard-x').onclick = () => this._dismissOnboard();
@@ -884,8 +942,8 @@ export class UI {
         <div class="tut-foot">
           <div class="tut-dots"></div>
           <div class="tut-btns">
-            <button class="tut-skip">Skip</button>
-            <button class="tut-next">Next</button>
+            <button class="tut-skip">건너뛰기</button>
+            <button class="tut-next">다음</button>
           </div>
         </div>
       </div>`;
@@ -907,7 +965,7 @@ export class UI {
     const dots = root.querySelector('.tut-dots');
     dots.innerHTML = TUTORIAL.map((_, i) => `<span class="tut-dot${i === this._tutStep ? ' on' : ''}"></span>`).join('');
     const next = root.querySelector('.tut-next');
-    next.textContent = (this._tutStep >= TUTORIAL.length - 1) ? 'Start playing' : 'Next';
+    next.textContent = (this._tutStep >= TUTORIAL.length - 1) ? '시작하기' : '다음';
   }
 
   _tutAdvance() {
@@ -941,8 +999,8 @@ export class UI {
       const broke = gold < 10;
       btn.disabled = broke;
       btn.setAttribute('data-tip', broke
-        ? `<b>Found a city</b> — needs <b>10 gold</b> (you have ${gold}). Earn gold by setting a city's focus to 🪙 gold or via trade.`
-        : '<b>Found a city</b> (10 gold) — then click fertile, open land to settle it. New cities grow your people and economy.');
+        ? `<b>도시 세우기</b> — <b>금화 10</b>이 필요합니다 (현재 ${gold}개). 도시의 초점을 🪙 금화로 두거나 교역으로 모을 수 있습니다.`
+        : '<b>도시 세우기</b> (금화 10) — 비옥하고 비어 있는 땅을 클릭해 도시를 세우세요. 새로운 도시는 백성과 경제를 키웁니다.');
     }
     // game clears foundMode after the click resolves; mirror that to the banner
     if (!this.game.foundMode) this.setFoundBanner(false);
@@ -1076,7 +1134,7 @@ export class UI {
   }
 
   setPossession(agent, game) {
-    if (agent) this.toast({ type: 'info', msg: `You are ${agent.name}. WASD to move · Esc to release.` });
+    if (agent) this.toast({ type: 'info', msg: `당신은 ${agent.name}입니다. WASD로 이동 · Esc로 빙의 해제.` });
   }
 
   // ---- event log toasts ----
@@ -1093,18 +1151,18 @@ export class UI {
     const peak = tribe ? (tribe.peakMembers || 0) : 0;
     const gens = sim ? (sim.maxGen || 0) : 0;
     const cities = (sim && tribe && sim.settleSys) ? sim.settleSys.countOf(tribe.id) : 0;
-    const name = tribe ? tribe.name : 'Your people';
+    const name = tribe ? tribe.name : '당신의 백성';
     const ico = win ? '🏛️' : '🕯️';
-    const title = win ? 'A Civilization Endures' : 'Your People Have Passed';
+    const title = win ? '문명이 살아남았습니다' : '백성이 떠났습니다';
     const blurb = win
-      ? `${name} carried a single evolving bloodline from the first campfire to the Information Age. ${gens} generations of real minds got you here.`
-      : `${name} has died out. Every citizen was a real neural net — what they learned is gone, but the world remembers them.`;
+      ? `${name}은(는) 단 하나의 진화하는 혈통을 모닥불에서 정보 시대까지 끌고 갔습니다. ${gens}세대의 진짜 마음들이 여기까지 데려왔습니다.`
+      : `${name}이(가) 사라졌습니다. 모든 시민은 진짜 신경망이었습니다 — 그들이 배운 것은 사라졌지만, 세계는 그들을 기억합니다.`;
     const stats = [
-      ['Years lived', yrs],
-      ['Era reached', era],
-      ['Peak population', peak],
-      ['Generations evolved', gens],
-      ['Cities founded', cities],
+      ['살아온 해', yrs],
+      ['도달한 시대', era],
+      ['최대 인구', peak],
+      ['진화한 세대', gens],
+      ['세운 도시', cities],
     ];
     const root = document.createElement('div');
     root.id = 'endscreen';
@@ -1116,8 +1174,8 @@ export class UI {
         <div class="end-stats">${stats.map(([k, v]) =>
           `<div class="end-stat"><span class="end-k">${esc(k)}</span><span class="end-v">${esc(v)}</span></div>`).join('')}</div>
         <div class="end-btns">
-          <button class="end-watch">Keep watching</button>
-          <button class="end-restart">New world</button>
+          <button class="end-watch">계속 관찰</button>
+          <button class="end-restart">새 세계</button>
         </div>
       </div>`;
     if (tribe) root.style.setProperty('--end-hue', hueToCss(tribe.hue));
@@ -1134,7 +1192,8 @@ export class UI {
     const div = document.createElement('div');
     div.className = `toast toast-${e.type || 'info'}`;
     if (e.color != null) div.style.borderLeftColor = hueToCss(e.color);
-    div.textContent = e.msg;
+    // 영문 enum (TIERS, tech name 등)을 한글 라벨로 변환 — 게임 코드 식별자는 보존
+    div.textContent = localizeEnum(e.msg);
     this.el.eventlog.appendChild(div);
     requestAnimationFrame(() => div.classList.add('show'));
     setTimeout(() => { div.classList.remove('show'); setTimeout(() => div.remove(), 400); }, 4200);

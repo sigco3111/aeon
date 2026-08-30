@@ -276,7 +276,7 @@ export class Diplomacy {
     if (war) { war.attacker = A.id; war.defender = B.id; war.goal = VALID_WAR_GOALS[goal] ? goal : DEFAULT_WAR_GOAL; }
     this.addGrievance(sim, A.id, B.id, DECLARE_GRIEVANCE);
     this.addGrievance(sim, B.id, A.id, DECLARE_GRIEVANCE * 0.5);
-    if (sim.emit) sim.emit('war', `${A.name} declares war on ${B.name}`, A.capitalX, A.capitalY, A.hue);
+    if (sim.emit) sim.emit('war', `${A.name}이(가) ${B.name}에 선전포고합니다`, A.capitalX, A.capitalY, A.hue);
     return true;
   }
 
@@ -314,10 +314,10 @@ export class Diplomacy {
     this._softenGrievance(A.id, B.id, 0.4);
     this._softenGrievance(B.id, A.id, 0.4);
     if (sim.emit) {
-      let msg = `${A.name} and ${B.name} make peace`;
+      let msg = `${A.name}와(과) ${B.name}가(이) 강화합니다`;
       if (terms && terms.victor != null) {
         const win = terms.victor === A.id ? A : B;
-        msg = `${A.name} and ${B.name} make peace — ${win.name} prevail`;
+        msg = `${A.name}와(과) ${B.name}가(이) 강화합니다 — ${win.name}이(가) 승리`;
       }
       sim.emit('peace', msg, A.capitalX, A.capitalY, A.hue);
     }
@@ -335,7 +335,7 @@ export class Diplomacy {
     const pAB = this.warPressure(sim, A, B), pBA = this.warPressure(sim, B, A);
     if (pAB < RIVAL_THRESHOLD && pBA < RIVAL_THRESHOLD) {
       this.setStance(sim, A.id, B.id, 'ally');
-      if (sim.emit) sim.emit('alliance', `${A.name} and ${B.name} forge an alliance`, A.capitalX, A.capitalY, A.hue);
+      if (sim.emit) sim.emit('alliance', `${A.name}와(과) ${B.name}가(이) 동맹을 맺습니다`, A.capitalX, A.capitalY, A.hue);
       return true;
     }
     return false;

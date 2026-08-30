@@ -5,13 +5,15 @@
 // This is the "sincere simulation of humanity" layer — culture as a consequence
 // of behavior, not a script. Computed once per sim-year; cheap (one agent pass).
 
+// Each is a "tribal ethos" the UI surfaces (see ui.js refreshTribeStats). `key`
+// is 영문 식별자 (보존), `name`/`custom`는 한글 표시.
 export const ETHOS = [
-  { key: 'militaristic', name: 'Militaristic', custom: 'warrior initiation rites' },
-  { key: 'communal',     name: 'Communal',     custom: 'kinship feasts & shared hearths' },
-  { key: 'devout',       name: 'Devout',       custom: 'ancestor worship & holy days' },
-  { key: 'industrious',  name: 'Industrious',  custom: 'guild apprenticeships' },
-  { key: 'scholarly',    name: 'Scholarly',    custom: 'oral histories & star-lore' },
-  { key: 'free',         name: 'Free-roaming', custom: 'seasonal migrations' },
+  { key: 'militaristic', name: '무장사회', custom: '전사식 의례' },
+  { key: 'communal',     name: '공동체',   custom: '친족 명절과 함께하는 화덕' },
+  { key: 'devout',       name: '경건',     custom: '조상숭배와 거룩한 날' },
+  { key: 'industrious',  name: '근면',     custom: '길드 도제 제도' },
+  { key: 'scholarly',    name: '학예',     custom: '구전 역사와 별의 비밀' },
+  { key: 'free',         name: '유랑민',   custom: '계절에 따른 이동' },
 ];
 const ETHOS_BY_KEY = new Map(ETHOS.map((e) => [e.key, e]));
 
@@ -66,7 +68,7 @@ export class Anthropology {
         tr.ethosName = newName;
         tr.customs = def ? [def.custom] : [];
         if (sim.emit && tr.foundedYear < sim.year() - 1) {
-          sim.emit('culture', `${tr.name} become a ${newName} people — ${def.custom}`, tr.capitalX, tr.capitalY, tr.hue);
+          sim.emit('culture', `${tr.name}이(가) ${newName} 민족이 되었습니다 — ${def.custom}`, tr.capitalX, tr.capitalY, tr.hue);
         }
       }
     }

@@ -31,47 +31,49 @@
 // Kept as a flat array of plain objects so it reads like a spreadsheet. Values
 // are tuned relative to wood = 1: stone/ore a touch more, hide/herbs niche,
 // refined metals expensive (and tech-gated), finished weapons the priciest.
+// `id`는 영문 식별자 (보존) — item lookup, recipe, stock key, trade 매핑에 사용.
+// `name`만 한글.
 export const ITEMS = [
-  // ---- RAW RESOURCES (tier 0, gathered straight off the land/creatures) ----
-  { id: 'wood',  name: 'Wood',   type: 'resource', tier: 0, value: 1,   madeBy: 'lumber' },
-  { id: 'stone', name: 'Stone',  type: 'resource', tier: 0, value: 1.3, madeBy: 'quarry' },
-  { id: 'ore',   name: 'Ore',    type: 'resource', tier: 0, value: 2.5, madeBy: 'mine' },
-  { id: 'food',  name: 'Food',   type: 'resource', tier: 0, value: 0.8, madeBy: 'farm' },
-  { id: 'hide',  name: 'Hide',   type: 'resource', tier: 0, value: 1.6 },   // from prey
-  { id: 'herbs', name: 'Herbs',  type: 'resource', tier: 0, value: 1.4 },   // foraged / medicinal
+  // ---- 원자재 (tier 0, 채집/수확) ----
+  { id: 'wood',  name: '목재',   type: 'resource', tier: 0, value: 1,   madeBy: 'lumber' },
+  { id: 'stone', name: '돌',     type: 'resource', tier: 0, value: 1.3, madeBy: 'quarry' },
+  { id: 'ore',   name: '광석',   type: 'resource', tier: 0, value: 2.5, madeBy: 'mine' },
+  { id: 'food',  name: '식량',   type: 'resource', tier: 0, value: 0.8, madeBy: 'farm' },
+  { id: 'hide',  name: '가죽',   type: 'resource', tier: 0, value: 1.6 },   // 사냥감
+  { id: 'herbs', name: '약초',   type: 'resource', tier: 0, value: 1.4 },   // 채집/약용
 
-  // ---- MATERIALS (tier 1–2, refined at a smithy; tech-gated) ----------------
-  { id: 'bronze', name: 'Bronze', type: 'material', tier: 1, value: 5,  material: 'bronze',
+  // ---- 가공재 (tier 1–2, 대장간에서 제련; 테크 잠금) ----------------
+  { id: 'bronze', name: '청동', type: 'material', tier: 1, value: 5,  material: 'bronze',
     madeFrom: ['ore'],    madeBy: 'smithy', tech: 'Bronzeworking' },
-  { id: 'iron',   name: 'Iron',   type: 'material', tier: 1, value: 7,  material: 'iron',
+  { id: 'iron',   name: '철',   type: 'material', tier: 1, value: 7,  material: 'iron',
     madeFrom: ['ore'],    madeBy: 'smithy', tech: 'IronWorking' },
-  { id: 'steel',  name: 'Steel',  type: 'material', tier: 2, value: 12, material: 'steel',
+  { id: 'steel',  name: '강철', type: 'material', tier: 2, value: 12, material: 'steel',
     madeFrom: ['iron'],   madeBy: 'smithy', tech: 'Metallurgy' },
 
-  // ---- TOOLS (tier 1–2, made at a workshop/smithy; raise yields) ------------
-  { id: 'stone_tool',  name: 'Stone Tools',  type: 'tool', tier: 1, value: 3,  material: 'stone',
+  // ---- 도구 (tier 1–2, 작업장/대장간; 수확량 증가) ------------
+  { id: 'stone_tool',  name: '돌 도구',     type: 'tool', tier: 1, value: 3,  material: 'stone',
     madeFrom: ['wood', 'stone'], madeBy: 'workshop' },
-  { id: 'bronze_tool', name: 'Bronze Tools', type: 'tool', tier: 2, value: 8,  material: 'bronze',
+  { id: 'bronze_tool', name: '청동 도구',   type: 'tool', tier: 2, value: 8,  material: 'bronze',
     madeFrom: ['wood', 'bronze'], madeBy: 'smithy', tech: 'Bronzeworking' },
-  { id: 'iron_tool',   name: 'Iron Tools',   type: 'tool', tier: 2, value: 11, material: 'iron',
+  { id: 'iron_tool',   name: '철 도구',     type: 'tool', tier: 2, value: 11, material: 'iron',
     madeFrom: ['wood', 'iron'],   madeBy: 'smithy', tech: 'IronWorking' },
 
-  // ---- WEAPONS (tier 1–3, made at a smithy; arm the army) ------------------
-  { id: 'stone_weapon',  name: 'Stone Weapons',  type: 'weapon', tier: 1, value: 4,  material: 'stone',
+  // ---- 무기 (tier 1–3, 대장간; 군대의 전력) ------------------
+  { id: 'stone_weapon',  name: '돌 무기',     type: 'weapon', tier: 1, value: 4,  material: 'stone',
     madeFrom: ['wood', 'stone'],  madeBy: 'workshop' },
-  { id: 'bronze_weapon', name: 'Bronze Weapons', type: 'weapon', tier: 2, value: 10, material: 'bronze',
+  { id: 'bronze_weapon', name: '청동 무기',   type: 'weapon', tier: 2, value: 10, material: 'bronze',
     madeFrom: ['wood', 'bronze'], madeBy: 'smithy', tech: 'Bronzeworking' },
-  { id: 'iron_weapon',   name: 'Iron Weapons',   type: 'weapon', tier: 2, value: 14, material: 'iron',
+  { id: 'iron_weapon',   name: '철 무기',     type: 'weapon', tier: 2, value: 14, material: 'iron',
     madeFrom: ['wood', 'iron'],   madeBy: 'smithy', tech: 'IronWorking' },
-  { id: 'steel_weapon',  name: 'Steel Weapons',  type: 'weapon', tier: 3, value: 22, material: 'steel',
+  { id: 'steel_weapon',  name: '강철 무기',   type: 'weapon', tier: 3, value: 22, material: 'steel',
     madeFrom: ['wood', 'steel'],  madeBy: 'smithy', tech: 'Metallurgy' },
 
-  // ---- CRAFTED GOODS (tier 1–2, trade goods made at a workshop) ------------
-  { id: 'leather',  name: 'Leather',  type: 'good', tier: 1, value: 3,
+  // ---- 공예품 (tier 1–2, 교역품) ------------
+  { id: 'leather',  name: '가죽 제품', type: 'good', tier: 1, value: 3,
     madeFrom: ['hide'],         madeBy: 'workshop' },
-  { id: 'medicine', name: 'Medicine', type: 'good', tier: 1, value: 4,
+  { id: 'medicine', name: '약재',     type: 'good', tier: 1, value: 4,
     madeFrom: ['herbs'],        madeBy: 'workshop', tech: 'Medicine' },
-  { id: 'pottery',  name: 'Pottery',  type: 'good', tier: 1, value: 2.5,
+  { id: 'pottery',  name: '토기',     type: 'good', tier: 1, value: 2.5,
     madeFrom: ['stone'],        madeBy: 'workshop', tech: 'Pottery' },
 ];
 

@@ -12,11 +12,11 @@ const loadbar = document.getElementById('loadbar');
 const loadstatus = document.getElementById('loadstatus');
 
 const steps = [
-  ['shaping the land…', 8],
-  ['carving rivers and mountains…', 22],
-  ['breathing climate into the world…', 40],
-  ['seeding the first peoples…', 70],
-  ['the world awaits…', 100],
+  ['땅을 빚는 중…', 8],
+  ['강과 산을 깎는 중…', 22],
+  ['기후를 불어넣는 중…', 40],
+  ['첫 백성을 심는 중…', 70],
+  ['세계를 기다리는 중…', 100],
 ];
 
 let ui, game;
@@ -124,8 +124,8 @@ function refreshTraitChips() {
     el.classList.toggle('disabled', full && !sel);
   });
   document.getElementById('homeland-note').textContent = seaSel
-    ? 'Your people will settle a fertile COAST of their own, drawn to the sea.'
-    : 'Your people will settle a fertile homeland of their own, far from rivals.';
+    ? '당신의 백성은 비옥한 해안가에 정착합니다 — 바다를 향해 끌립니다.'
+    : '당신의 백성은 라이벌로부터 먼, 비옥한 고장 한켠에 정착합니다.';
 }
 
 function rollName() {
@@ -190,7 +190,7 @@ function installDebugAPI() {
     ascend: () => g.ascend(),
     camera: (x, y, zoom) => g.cam.setTarget(x, y, zoom),
   };
-  console.log('[AEON] debug API ready — AEON.creative() / AEON.survival("Name",["martial"]) / AEON.stats()');
+  console.log('[AEON] 디버그 API 준비 완료 — AEON.creative() / AEON.survival("이름",["martial"]) / AEON.stats()');
 }
 
 progress(0);

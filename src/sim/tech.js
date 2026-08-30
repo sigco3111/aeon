@@ -16,123 +16,123 @@
 
 // Era names, indexed by tech.era (0..8).
 export const ERAS = [
-  'Stone Age',     // 0
-  'Bronze Age',    // 1
-  'Iron Age',      // 2
-  'Classical Era', // 3
-  'Medieval Era',  // 4
-  'Renaissance',   // 5
-  'Industrial Age',// 6
-  'Modern Era',    // 7
-  'Information Age',// 8
+  '석기 시대',     // 0 - Stone Age
+  '청동기 시대',    // 1 - Bronze Age
+  '철기 시대',      // 2 - Iron Age
+  '고전 시대',      // 3 - Classical Era
+  '중세 시대',      // 4 - Medieval Era
+  '르네상스',       // 5 - Renaissance
+  '산업 시대',      // 6 - Industrial Age
+  '근대 시대',      // 7 - Modern Era
+  '정보 시대',      // 8 - Information Age
 ];
 
 // The tree. Ordered roughly by era then dependency. Each def:
-//   id      stable string key (referenced by prereqs / tribe.tech.known)
-//   name    human-readable label (for toasts / the tech panel)
+//   id      stable string key (referenced by prereqs / tribe.tech.known)  ← 영문 식별자 (보존)
+//   name    human-readable label (for toasts / the tech panel)             ← 한글 표시
 //   era     index into ERAS — also drives the tribe's current era
-//   prereqs array of tech ids that must be known first ([] = root tech)
+//   prereqs array of tech ids that must be known first ([] = root tech)    ← 영문 식별자 (보존)
 //   cost    research points to unlock
-//   desc    one-line flavor for the UI
+//   desc    one-line flavor for the UI                                     ← 한글 표시
 //   effect  caps it contributes (see recompute for how they combine):
 //             foodYield, moveMul, combat, researchMul, healthRegen, storage
 //               -> multiplicative (default 1)
 //             seafaring, flight -> boolean OR (default false)
 export const TECHS = [
-  // --- Stone Age (0) ------------------------------------------------------
-  { id: 'Fire', name: 'Fire', era: 0, prereqs: [], cost: 8,
-    desc: 'Tame fire — warmth, cooking, protection.',
+  // --- 석기 시대 (0) ------------------------------------------------------
+  { id: 'Fire', name: '불', era: 0, prereqs: [], cost: 8,
+    desc: '불을 다루다 — 온기와 요리와 보호.',
     effect: { foodYield: 1.1, healthRegen: 1.1 } },
-  { id: 'StoneTools', name: 'Stone Tools', era: 0, prereqs: [], cost: 10,
-    desc: 'Knapped stone — sharper tools and weapons.',
+  { id: 'StoneTools', name: '석기', era: 0, prereqs: [], cost: 10,
+    desc: '간 돌로 만든 — 더 날카로운 도구와 무기.',
     effect: { combat: 1.12, foodYield: 1.08 } },
-  { id: 'Agriculture', name: 'Agriculture', era: 0, prereqs: ['Fire', 'StoneTools'], cost: 30,
-    desc: 'Farm the land instead of foraging it.',
+  { id: 'Agriculture', name: '농업', era: 0, prereqs: ['Fire', 'StoneTools'], cost: 30,
+    desc: '채집 대신 땅을 일구다.',
     effect: { foodYield: 1.5 } },
-  { id: 'AnimalHusbandry', name: 'Animal Husbandry', era: 0, prereqs: ['Agriculture'], cost: 38,
-    desc: 'Tame horses and herds — ride and haul.',
+  { id: 'AnimalHusbandry', name: '목축', era: 0, prereqs: ['Agriculture'], cost: 38,
+    desc: '말과 가축을 길들여 — 타고 나르다.',
     effect: { moveMul: 1.25, foodYield: 1.15 } },
-  { id: 'Pottery', name: 'Pottery', era: 0, prereqs: ['Agriculture'], cost: 34,
-    desc: 'Fired clay — store food and water against lean times.',
+  { id: 'Pottery', name: '토기', era: 0, prereqs: ['Agriculture'], cost: 34,
+    desc: '구운 흙그릇 — 흉년을 대비해 식량과 물을 저장.',
     effect: { storage: 1.4 } },
 
-  // --- Bronze Age (1) -----------------------------------------------------
-  { id: 'Wheel', name: 'The Wheel', era: 1, prereqs: ['AnimalHusbandry'], cost: 50,
-    desc: 'Wheel and cart — move people and goods.',
+  // --- 청동기 시대 (1) -----------------------------------------------------
+  { id: 'Wheel', name: '바퀴', era: 1, prereqs: ['AnimalHusbandry'], cost: 50,
+    desc: '바퀴와 수레 — 사람과 물자를 옮기다.',
     effect: { moveMul: 1.2 } },
-  { id: 'Writing', name: 'Writing', era: 1, prereqs: ['Pottery'], cost: 52,
-    desc: 'Record knowledge — ideas outlive their thinkers.',
+  { id: 'Writing', name: '문자', era: 1, prereqs: ['Pottery'], cost: 52,
+    desc: '지식을 기록 — 생각이 만든 자가 죽어도 남는다.',
     effect: { researchMul: 1.3 } },
-  { id: 'Bronzeworking', name: 'Bronze Working', era: 1, prereqs: ['Pottery', 'StoneTools'], cost: 58,
-    desc: 'Alloy copper and tin — the first metal age.',
+  { id: 'Bronzeworking', name: '청동 제작', era: 1, prereqs: ['Pottery', 'StoneTools'], cost: 58,
+    desc: '구리와 주석의 합금 — 최초의 금속 시대.',
     effect: { combat: 1.25, storage: 1.05 } },
-  { id: 'Sailing', name: 'Sailing', era: 1, prereqs: ['Pottery', 'Writing'], cost: 64,
-    desc: 'Boats and sails — CROSS THE WATER.',
+  { id: 'Sailing', name: '항해', era: 1, prereqs: ['Pottery', 'Writing'], cost: 64,
+    desc: '배와 돛 — 물을 건너다.',
     effect: { seafaring: true, moveMul: 1.05 } },
 
-  // --- Iron Age (2) -------------------------------------------------------
-  { id: 'Mathematics', name: 'Mathematics', era: 2, prereqs: ['Writing'], cost: 80,
-    desc: 'Number and proof — the language of science.',
+  // --- 철기 시대 (2) -------------------------------------------------------
+  { id: 'Mathematics', name: '수학', era: 2, prereqs: ['Writing'], cost: 80,
+    desc: '수와 증명 — 과학의 언어.',
     effect: { researchMul: 1.25 } },
-  { id: 'Currency', name: 'Currency', era: 2, prereqs: ['Writing', 'Bronzeworking'], cost: 78,
-    desc: 'Coined money — trade, surplus and specialists.',
+  { id: 'Currency', name: '화폐', era: 2, prereqs: ['Writing', 'Bronzeworking'], cost: 78,
+    desc: '주조된 돈 — 교역과 잉여와 직업의 분화.',
     effect: { researchMul: 1.15, foodYield: 1.1 } },
-  { id: 'IronWorking', name: 'Iron Working', era: 2, prereqs: ['Bronzeworking'], cost: 92,
-    desc: 'Smelt iron — harder tools, deadlier arms.',
+  { id: 'IronWorking', name: '철 제작', era: 2, prereqs: ['Bronzeworking'], cost: 92,
+    desc: '철을 제련하다 — 더 단단한 도구, 더 무서운 병기.',
     effect: { combat: 1.4 } },
-  { id: 'Masonry', name: 'Masonry', era: 2, prereqs: ['Bronzeworking'], cost: 84,
-    desc: 'Cut stone — walls, granaries, monuments.',
+  { id: 'Masonry', name: '석조', era: 2, prereqs: ['Bronzeworking'], cost: 84,
+    desc: '다듬은 돌 — 성벽, 곡창, 기념물.',
     effect: { storage: 1.3, combat: 1.1 } },
 
-  // --- Classical Era (3) --------------------------------------------------
-  { id: 'Engineering', name: 'Engineering', era: 3, prereqs: ['Mathematics', 'Masonry', 'Wheel'], cost: 120,
-    desc: 'Roads, aqueducts and the machines of war.',
+  // --- 고전 시대 (3) --------------------------------------------------
+  { id: 'Engineering', name: '공학', era: 3, prereqs: ['Mathematics', 'Masonry', 'Wheel'], cost: 120,
+    desc: '도로, 수로, 그리고 전쟁의 기계들.',
     effect: { moveMul: 1.12, storage: 1.2, combat: 1.1 } },
-  { id: 'Medicine', name: 'Medicine', era: 3, prereqs: ['Mathematics'], cost: 115,
-    desc: 'Herbal craft and surgery — heal the sick.',
+  { id: 'Medicine', name: '의술', era: 3, prereqs: ['Mathematics'], cost: 115,
+    desc: '약초와 외과 — 병든 자를 고치다.',
     effect: { healthRegen: 1.4 } },
 
-  // --- Medieval Era (4) ---------------------------------------------------
-  { id: 'Compass', name: 'The Compass', era: 4, prereqs: ['Sailing', 'Mathematics'], cost: 150,
-    desc: 'Navigate the open sea with confidence.',
+  // --- 중세 시대 (4) ---------------------------------------------------
+  { id: 'Compass', name: '나침반', era: 4, prereqs: ['Sailing', 'Mathematics'], cost: 150,
+    desc: '바다 위를 자신 있게 항해하다.',
     effect: { seafaring: true, moveMul: 1.08 } },
-  { id: 'Gunpowder', name: 'Gunpowder', era: 4, prereqs: ['IronWorking', 'Engineering'], cost: 165,
-    desc: 'Black powder — cannon and gun.',
+  { id: 'Gunpowder', name: '화약', era: 4, prereqs: ['IronWorking', 'Engineering'], cost: 165,
+    desc: '검은 가루 — 대포와 총.',
     effect: { combat: 1.5 } },
 
-  // --- Renaissance (5) ----------------------------------------------------
-  { id: 'Printing', name: 'The Printing Press', era: 5, prereqs: ['Writing', 'Engineering'], cost: 210,
-    desc: 'The press — knowledge spreads to everyone.',
+  // --- 르네상스 (5) ----------------------------------------------------
+  { id: 'Printing', name: '인쇄술', era: 5, prereqs: ['Writing', 'Engineering'], cost: 210,
+    desc: '인쇄기 — 지식이 모두에게 퍼지다.',
     effect: { researchMul: 1.4 } },
-  { id: 'ScientificMethod', name: 'The Scientific Method', era: 5, prereqs: ['Printing', 'Mathematics'], cost: 260,
-    desc: 'Hypothesis and experiment — SCIENCE itself.',
+  { id: 'ScientificMethod', name: '과학적 방법', era: 5, prereqs: ['Printing', 'Mathematics'], cost: 260,
+    desc: '가설과 실험 — 과학 그 자체.',
     effect: { researchMul: 2.0, healthRegen: 1.1 } },
 
-  // --- Industrial Age (6) -------------------------------------------------
-  { id: 'Steam', name: 'Steam Power', era: 6, prereqs: ['ScientificMethod', 'IronWorking'], cost: 330,
-    desc: 'The steam engine — tireless mechanical power.',
+  // --- 산업 시대 (6) -------------------------------------------------
+  { id: 'Steam', name: '증기 기관', era: 6, prereqs: ['ScientificMethod', 'IronWorking'], cost: 330,
+    desc: '증기 기관 — 쉬지 않는 기계의 힘.',
     effect: { moveMul: 1.3, foodYield: 1.2, combat: 1.1 } },
-  { id: 'Electricity', name: 'Electricity', era: 6, prereqs: ['ScientificMethod'], cost: 350,
-    desc: 'Harness the current — light, motor, telegraph.',
+  { id: 'Electricity', name: '전기', era: 6, prereqs: ['ScientificMethod'], cost: 350,
+    desc: '전류를 다루다 — 불빛, 모터, 전신.',
     effect: { researchMul: 1.3, healthRegen: 1.2 } },
-  { id: 'Industrialization', name: 'Industrialization', era: 6, prereqs: ['Steam'], cost: 400,
-    desc: 'The factory — mass production at scale.',
+  { id: 'Industrialization', name: '공업화', era: 6, prereqs: ['Steam'], cost: 400,
+    desc: '공장 — 대규모 생산.',
     effect: { foodYield: 1.4, storage: 1.5, combat: 1.2 } },
 
-  // --- Modern Era (7) -----------------------------------------------------
-  { id: 'Combustion', name: 'Combustion Engine', era: 7, prereqs: ['Industrialization', 'Electricity'], cost: 470,
-    desc: 'The engine — automobiles and armor.',
+  // --- 근대 시대 (7) -----------------------------------------------------
+  { id: 'Combustion', name: '내연 기관', era: 7, prereqs: ['Industrialization', 'Electricity'], cost: 470,
+    desc: '엔진 — 자동차와 장갑차.',
     effect: { moveMul: 1.5, combat: 1.2 } },
-  { id: 'Plastics', name: 'Plastics', era: 7, prereqs: ['Industrialization', 'Electricity'], cost: 490,
-    desc: 'Synthetic materials — preserve and store everything.',
+  { id: 'Plastics', name: '플라스틱', era: 7, prereqs: ['Industrialization', 'Electricity'], cost: 490,
+    desc: '합성 재료 — 무엇이든 오래 보존하다.',
     effect: { storage: 1.6, foodYield: 1.3 } },
-  { id: 'Flight', name: 'Powered Flight', era: 7, prereqs: ['Combustion'], cost: 540,
-    desc: 'Powered flight — CROSS ANY TERRAIN BY AIR.',
+  { id: 'Flight', name: '유인 비행', era: 7, prereqs: ['Combustion'], cost: 540,
+    desc: '동력 비행 — 공중으로 어디든.',
     effect: { flight: true, moveMul: 1.6 } },
 
-  // --- Information Age (8) -------------------------------------------------
-  { id: 'Computing', name: 'Computing', era: 8, prereqs: ['Plastics', 'Electricity', 'ScientificMethod'], cost: 660,
-    desc: 'The computer — automate thought itself.',
+  // --- 정보 시대 (8) -------------------------------------------------
+  { id: 'Computing', name: '컴퓨팅', era: 8, prereqs: ['Plastics', 'Electricity', 'ScientificMethod'], cost: 660,
+    desc: '컴퓨터 — 사유 그 자체를 자동화하다.',
     effect: { researchMul: 1.6, storage: 1.2 } },
 ];
 

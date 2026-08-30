@@ -15,7 +15,15 @@
 import { hash2 } from '../core/rng.js';
 import { ITEMS } from './items.js';
 
+// tier는 영문 enum 키로 사용되는 부분이 있으므로 보존하고, 한글 라벨은 UI 매핑에서 처리.
+// UI에서 사용: tier index → {Camp: '캠프', Village: '촌락', Town: '마을', City: '도시'} 매핑.
+// 'grow' emit 메시지의 한국어는 호출 측에서 매핑.
+//
+// 영어 enum 자체는 sim.js / game.js / ui.js에서 인덱스로만 사용됨.
+// 한국어 라벨은 ui.js의 _TIER_KO 매핑을 통해 표시.
+// (식별자 보존 원칙)
 export const TIERS = ['Camp', 'Village', 'Town', 'City'];
+export const TIERS_KO = ['캠프', '촌락', '마을', '도시'];
 
 // ---------------------------------------------------------------------------
 // PRODUCTION RECIPES — derived ONCE from the item registry (items.js is the
@@ -191,7 +199,7 @@ export class SettlementSystem {
     }
     this._grow(sim, s, s.era);
     sim.settlements.push(s);
-    if (sim.emit && tr) sim.emit('settle', `${s.name} is founded by ${tr.name}`, s.x, s.y, tr.hue);
+    if (sim.emit && tr) sim.emit('settle', `${s.name}이(가) ${tr.name}에 의해 세워졌습니다`, s.x, s.y, tr.hue);
     return s;
   }
 
@@ -438,7 +446,7 @@ export class SettlementSystem {
       list.push(s);
       if (!arr) { arr = []; index.set(rec.tid, arr); }
       arr.push(s);
-      sim.emit('settle', `${s.name} is founded by ${tribe.name}`, s.x, s.y, tribe.hue);
+      sim.emit('settle', `${s.name}이(가) ${tribe.name}에 의해 세워졌습니다`, s.x, s.y, tribe.hue);
     }
 
     // --- dissolve: tribe gone, or starved out ----------------------------------
@@ -448,7 +456,7 @@ export class SettlementSystem {
       const tribe = sim.tribes.get(s.tribeId);
       const gone = !tribe || tribe.members === 0;
       if (gone || (s.starve > MAX_STARVE && !s.permanent)) {
-        sim.emit('abandon', `${s.name} lies abandoned`, s.x, s.y, s.hue);
+        sim.emit('abandon', `${s.name}은(는) 버려졌습니다`, s.x, s.y, s.hue);
         continue; // drop
       }
       list[w++] = s;
@@ -476,6 +484,10 @@ export class SettlementSystem {
       s._lt = tier; s._le = era; s._lb = bracket;
     }
     if (tier > oldTier && oldTier >= 0) {
+      // tier 한글 라벨은 ui.js의 TIERS_KO 매핑을 통해 표시되도록,
+      // emit 메시지에는 영문 TIERS[tier] 그대로 두고 ui에서 가공.
+      // 단, 사용자에게 바로 보이는 메시지이므로 일단 영문 enum을 그대로 두고
+      // ui.js toast에서 _koTier() 매핑으로 변환.
       sim.emit('grow', `${s.name} grows into a ${TIERS[tier]}`, s.x, s.y, s.hue);
     }
   }

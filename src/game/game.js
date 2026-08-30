@@ -223,7 +223,7 @@ export class Game {
     // sticks instead of being overwritten each year. You rule by law now; your council steps back.
     if (this.playerTribe.autopilot) {
       this.playerTribe.autopilot = false;
-      this.ui.toast({ type: 'info', msg: '👑 You take the throne — your council steps back. You rule now.' });
+      this.ui.toast({ type: 'info', msg: '👑 당신이 왕좌에 앉습니다 — 평의회가 물러나고, 당신이 다스립니다.' });
     }
     this.gov.setPolicy(this.sim, this.playerTribe, key, val);
   }
@@ -231,7 +231,7 @@ export class Game {
   // ---------------------------------------------------------------- army command
   // toggle RTS command mode: drag a box to select your soldiers, click to order them
   musterArmy() {
-    if (!this.playerTribe) { this.ui.toast({ type: 'info', msg: 'Lead a nation first to command its army.' }); return; }
+    if (!this.playerTribe) { this.ui.toast({ type: 'info', msg: '먼저 한 민족을 이끌어야 army를 지휘할 수 있습니다.' }); return; }
     this.commandMode = !this.commandMode;
     if (this.commandMode) { this.selectArmy(); }   // auto-select your whole army on entry
     else { this.selected = []; this.selBox = null; }
@@ -247,7 +247,7 @@ export class Game {
       if (a.alive && a.tribeId === this.playerTribe.id && (a.role === 1 || a.role === 2)) army.push(a);
     }
     this.selected = army;
-    this.ui.toast({ type: 'info', msg: army.length ? `⚔ ${army.length} soldiers ready — click to move/attack` : 'No soldiers yet — raise aggression or set a city to ⚔ military.' });
+    this.ui.toast({ type: 'info', msg: army.length ? `⚔ ${army.length}명의 병사가 준비됐습니다 — 클릭해 이동/공격하세요` : '아직 병사가 없습니다 — 공격성을 높이거나 도시의 초점을 ⚔ 군사 쪽으로 설정하세요.' });
   }
 
   // select your own units inside a world-space rectangle (prefers soldiers)
@@ -263,7 +263,7 @@ export class Game {
     // if any soldiers are in the box, command just the soldiers; else everyone caught
     const soldiers = pick.filter((a) => a.role === 1 || a.role === 2);
     this.selected = soldiers.length ? soldiers : pick;
-    this.ui.toast({ type: 'info', msg: `${this.selected.length} units selected — click to move/attack.` });
+    this.ui.toast({ type: 'info', msg: `${this.selected.length}개 유닛 선택 — 클릭해 이동/공격하세요.` });
   }
 
   // order selected units to a spot; clicking enemy land marches them in AND declares war
@@ -282,21 +282,21 @@ export class Game {
       } else if (foe) attack = true;
     }
     this.fx.ring(wx, wy, attack ? '#ff5a44' : '#6ea8ff', 6, 26);
-    this.fx.text(wx, wy, attack ? '⚔ attack' : '→ move', attack ? '#ff8a72' : '#9cc4ff');
+    this.fx.text(wx, wy, attack ? '⚔ 공격' : '→ 이동', attack ? '#ff8a72' : '#9cc4ff');
   }
 
   // ---------------------------------------------------------------- found city
   foundCity() {
-    if (!this.playerTribe) { this.ui.toast({ type: 'info', msg: 'Lead a nation first.' }); return; }
-    if (this.playerTribe.gold < 10) { this.ui.toast({ type: 'extinct', msg: 'Need 10 gold to found a city.' }); return; }
+    if (!this.playerTribe) { this.ui.toast({ type: 'info', msg: '먼저 한 민족을 이끄세요.' }); return; }
+    if (this.playerTribe.gold < 10) { this.ui.toast({ type: 'extinct', msg: '도시를 세우려면 금화 10이 필요합니다.' }); return; }
     this.foundMode = true;
-    this.ui.toast({ type: 'info', msg: '🏛 Click fertile land to found a city (10 gold).' });
+    this.ui.toast({ type: 'info', msg: '🏛 도시를 세울 비옥한 땅을 클릭하세요 (금화 10).' });
   }
   foundCityAt(wx, wy) {
     this.foundMode = false;
     if (!this.playerTribe) return;
     if (this.playerTribe.gold < 10) {
-      this.ui.toast({ type: 'extinct', msg: `Need 10 gold to found a city (have ${Math.floor(this.playerTribe.gold)}).` });
+      this.ui.toast({ type: 'extinct', msg: `도시를 세우려면 금화 10이 필요합니다 (현재 ${Math.floor(this.playerTribe.gold)}).` });
       return;
     }
     const s = this.sim.settleSys.foundAt(this.sim, this.playerTribe.id, wx, wy);
@@ -308,10 +308,10 @@ export class Game {
       // surface WHY the tile was rejected (coremech sets settleSys.lastFoundReason) so the
       // player learns the rule instead of getting a vague "can't found here". (#2)
       const why = this.sim.settleSys.lastFoundReason;
-      const msg = why === 'water' ? "Can't found on water — pick walkable land."
-        : why === 'too_close' ? 'Too close to an existing city — spread out.'
-        : why === 'occupied' ? 'Invalid tile — pick open, walkable land.'
-        : "Can't found here — needs open, walkable land clear of other cities.";
+      const msg = why === 'water' ? "물 위에는 도시를 세울 수 없습니다 — 걸어서 갈 수 있는 땅을 선택하세요."
+        : why === 'too_close' ? '다른 도시에 너무 가깝습니다 — 더 멀리 떨어진 곳을 선택하세요.'
+        : why === 'occupied' ? '유효하지 않은 타일입니다 — 비어 있고 걸을 수 있는 땅을 선택하세요.'
+        : "여기에는 도시를 세울 수 없습니다 — 다른 도시에 가로막히지 않은, 비어 있고 걸을 수 있는 땅이 필요합니다.";
       this.ui.toast({ type: 'extinct', msg });
     }
   }
@@ -349,7 +349,7 @@ export class Game {
   update(dtMs) {
     // possession steering from WASD/arrows
     if (this.possessed) {
-      if (!this.possessed.alive) { this.fx.text(this.cam.x, this.cam.y, 'Your body has died', '#f66'); this.releasePossession(); }
+      if (!this.possessed.alive) { this.fx.text(this.cam.x, this.cam.y, '당신의 몸은 죽었습니다', '#f66'); this.releasePossession(); }
       else {
         let vx = 0, vy = 0;
         if (this.keys.has('w') || this.keys.has('arrowup')) vy -= 1;
@@ -378,7 +378,7 @@ export class Game {
     if (this.playerTribe && this._playerEverLived && this.playerTribe.members === 0 && !this.gameOver) {
       this.gameOver = 'defeat';
       this.speedIdx = 0; this.ui.setSpeed(0);   // the world stops when your people are gone
-      this.ui.toast({ type: 'extinct', msg: `${this.playerTribe.name} is no more. Your people have died out.`, color: this.playerTribe.hue });
+      this.ui.toast({ type: 'extinct', msg: `${this.playerTribe.name}은(는) 더 이상 없습니다. 백성이 멸망했습니다.`, color: this.playerTribe.hue });
       if (this.ui.showEndScreen) this.ui.showEndScreen('defeat', this.playerTribe, this);
     }
     // VICTORY (#8): lead one evolving bloodline from the Stone Age to the Information
@@ -388,12 +388,12 @@ export class Game {
         && this.playerTribe.tech && this.playerTribe.tech.era >= ERAS.length - 1) {
       this.gameOver = 'victory';
       this.speedIdx = 0; this.ui.setSpeed(0);
-      this.ui.toast({ type: 'info', msg: `${this.playerTribe.name} has reached the Information Age. You win.`, color: this.playerTribe.hue });
+      this.ui.toast({ type: 'info', msg: `${this.playerTribe.name}이(가) 정보 시대에 도달했습니다. 당신이 승리했습니다.`, color: this.playerTribe.hue });
       if (this.ui.showEndScreen) this.ui.showEndScreen('victory', this.playerTribe, this);
     }
     // legacy path: if a player tribe were ever removed outright, drop back out cleanly
     if (this.playerTribe && !this.sim.tribes.has(this.playerTribe.id)) {
-      this.ui.toast({ type: 'extinct', msg: `${this.playerTribe.name} has fallen`, color: this.playerTribe.hue });
+      this.ui.toast({ type: 'extinct', msg: `${this.playerTribe.name}이(가) 멸망했습니다`, color: this.playerTribe.hue });
       this.ascend();
     }
 

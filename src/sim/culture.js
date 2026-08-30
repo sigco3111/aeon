@@ -36,15 +36,16 @@ const CODAS = [
 ];
 
 // ---- how a faith is named once a root word is coined ----------------------
+// 영문 root(`w`)에 한국어 종별 형식을 붙여 자연스러운 한국 신앙 이름 생성.
 const FAITH_FORMS = [
-  (w) => `the ${w} Faith`,
-  (w) => `the Cult of ${w}`,
-  (w) => `the Way of ${w}`,
-  (w) => `the ${w} Mysteries`,
-  (w) => `the Children of ${w}`,
-  (w) => `${w}ism`,
-  (w) => `the Order of ${w}`,
-  (w) => `the Path of ${w}`,
+  (w) => `${w} 신앙`,
+  (w) => `${w} 교단`,
+  (w) => `${w}의 길`,
+  (w) => `${w}의 신비`,
+  (w) => `${w}의 자녀들`,
+  (w) => `${w}교`,
+  (w) => `${w} 수도회`,
+  (w) => `${w}의 도`,
 ];
 
 // ---- tuning ---------------------------------------------------------------
@@ -188,7 +189,7 @@ export class Culture {
       rel.fervor += (vigor - 0.5) * FERVOR_GAIN;
       if (rel.fervor > 1) rel.fervor = 1;
       if (rel.fervor <= 0.02) {
-        sim.emit('religion', `${rel.name} fades among ${tr.name}`, tr.capitalX, tr.capitalY, tr.hue);
+        sim.emit('religion', `${rel.name}의 신앙이 ${tr.name} 사이에서 사라집니다`, tr.capitalX, tr.capitalY, tr.hue);
         tr.religion = null;
         return;
       }
@@ -218,7 +219,7 @@ export class Culture {
       originId: tr.id,
     };
     tr.culture += FAITH_CULTURE * 4; // a founding surge of zeal
-    sim.emit('religion', `${tr.name} embrace ${name}`, tr.capitalX, tr.capitalY, tr.hue);
+    sim.emit('religion', `${tr.name}이(가) ${name}을(를) 받들기 시작합니다`, tr.capitalX, tr.capitalY, tr.hue);
   }
 
   _convert(sim, dst, rel, drel) {
@@ -232,9 +233,9 @@ export class Culture {
     };
     dst.culture += FAITH_CULTURE * 2;
     if (adopting) {
-      sim.emit('religion', `${dst.name} take up ${rel.name}`, dst.capitalX, dst.capitalY, dst.hue);
+      sim.emit('religion', `${dst.name}이(가) ${rel.name}을(를) 받아들입니다`, dst.capitalX, dst.capitalY, dst.hue);
     } else {
-      sim.emit('religion', `${dst.name} convert to ${rel.name}`, dst.capitalX, dst.capitalY, dst.hue);
+      sim.emit('religion', `${dst.name}이(가) ${rel.name}으로 개종합니다`, dst.capitalX, dst.capitalY, dst.hue);
     }
   }
 

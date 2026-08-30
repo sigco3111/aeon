@@ -5,33 +5,34 @@
 // onto tribe.caps each year AFTER TechSystem.recompute (so tech sets the base and
 // civics/government modify it). Deterministic; uses the passed rng only.
 
+// id 보존, name만 한글.
 export const GOVERNMENTS = {
-  chiefdom:    { name: 'Chiefdom',     eff: {} },
-  confederacy: { name: 'Confederacy',  eff: { foodYield: 1.1, moveMul: 1.08, researchMul: 1.05 } },
-  monarchy:    { name: 'Monarchy',     eff: { combat: 1.2, healthRegen: 1.1, storage: 1.1 } },
-  theocracy:   { name: 'Theocracy',    eff: { healthRegen: 1.15, researchMul: 1.1, combat: 1.05 } },
-  republic:    { name: 'Republic',     eff: { researchMul: 1.18, foodYield: 1.12 } },
-  democracy:   { name: 'Democracy',    eff: { researchMul: 1.3, foodYield: 1.12, healthRegen: 1.1 } },
-  autocracy:   { name: 'Autocracy',    eff: { combat: 1.3, moveMul: 1.1, storage: 1.15 } },
+  chiefdom:    { name: '추장부',     eff: {} },
+  confederacy: { name: '동맹',       eff: { foodYield: 1.1, moveMul: 1.08, researchMul: 1.05 } },
+  monarchy:    { name: '군주국',     eff: { combat: 1.2, healthRegen: 1.1, storage: 1.1 } },
+  theocracy:   { name: '신정정치',   eff: { healthRegen: 1.15, researchMul: 1.1, combat: 1.05 } },
+  republic:    { name: '공화국',     eff: { researchMul: 1.18, foodYield: 1.12 } },
+  democracy:   { name: '민주주의',   eff: { researchMul: 1.3, foodYield: 1.12, healthRegen: 1.1 } },
+  autocracy:   { name: '전제정치',   eff: { combat: 1.3, moveMul: 1.1, storage: 1.15 } },
 };
 
 // id, name, era (shared 9-era spine), prereqs, culture cost, optional government
 // it establishes, and a caps effect multiplier.
 export const CIVICS = [
-  { id: 'kinship',     name: 'Kinship',           era: 0, prereqs: [], cost: 6,   gov: 'chiefdom', eff: { foodYield: 1.05 } },
-  { id: 'oral_lore',   name: 'Oral Tradition',    era: 0, prereqs: ['kinship'], cost: 14, eff: { researchMul: 1.06 } },
-  { id: 'customs',     name: 'Customs & Ritual',  era: 0, prereqs: ['kinship'], cost: 18, eff: { healthRegen: 1.06 } },
-  { id: 'warrior_code',name: 'Warrior Code',      era: 1, prereqs: ['customs'], cost: 30, eff: { combat: 1.12 } },
-  { id: 'confederacy', name: 'Confederacy',       era: 1, prereqs: ['oral_lore'], cost: 36, gov: 'confederacy', eff: {} },
-  { id: 'code_of_law', name: 'Code of Law',       era: 2, prereqs: ['confederacy'], cost: 60, gov: 'monarchy', eff: { storage: 1.1 } },
-  { id: 'mysticism',   name: 'Mysticism',         era: 2, prereqs: ['customs'], cost: 64, gov: 'theocracy', eff: { researchMul: 1.08 } },
-  { id: 'philosophy',  name: 'Philosophy',        era: 3, prereqs: ['code_of_law'], cost: 100, eff: { researchMul: 1.15 } },
-  { id: 'guilds',      name: 'Guilds',            era: 3, prereqs: ['code_of_law'], cost: 110, eff: { foodYield: 1.12, storage: 1.1 } },
-  { id: 'citizenship', name: 'Citizenship',       era: 4, prereqs: ['philosophy'], cost: 170, gov: 'republic', eff: {} },
-  { id: 'feudalism',   name: 'Feudalism',         era: 4, prereqs: ['code_of_law'], cost: 160, eff: { combat: 1.15 } },
-  { id: 'enlightenment', name: 'Enlightenment',   era: 5, prereqs: ['citizenship'], cost: 260, eff: { researchMul: 1.2 } },
-  { id: 'nationalism', name: 'Nationalism',       era: 6, prereqs: ['enlightenment'], cost: 360, gov: 'autocracy', eff: { combat: 1.12 } },
-  { id: 'democracy',   name: 'Democracy',         era: 7, prereqs: ['enlightenment'], cost: 480, gov: 'democracy', eff: {} },
+  { id: 'kinship',      name: '친족',           era: 0, prereqs: [], cost: 6,   gov: 'chiefdom',    eff: { foodYield: 1.05 } },
+  { id: 'oral_lore',    name: '구전 전통',      era: 0, prereqs: ['kinship'], cost: 14, eff: { researchMul: 1.06 } },
+  { id: 'customs',      name: '관습과 의례',    era: 0, prereqs: ['kinship'], cost: 18, eff: { healthRegen: 1.06 } },
+  { id: 'warrior_code', name: '전사의 도리',    era: 1, prereqs: ['customs'], cost: 30, eff: { combat: 1.12 } },
+  { id: 'confederacy',  name: '동맹 결성',      era: 1, prereqs: ['oral_lore'], cost: 36, gov: 'confederacy', eff: {} },
+  { id: 'code_of_law',  name: '법전',           era: 2, prereqs: ['confederacy'], cost: 60, gov: 'monarchy', eff: { storage: 1.1 } },
+  { id: 'mysticism',    name: '신비주의',       era: 2, prereqs: ['customs'], cost: 64, gov: 'theocracy', eff: { researchMul: 1.08 } },
+  { id: 'philosophy',   name: '철학',           era: 3, prereqs: ['code_of_law'], cost: 100, eff: { researchMul: 1.15 } },
+  { id: 'guilds',       name: '길드',           era: 3, prereqs: ['code_of_law'], cost: 110, eff: { foodYield: 1.12, storage: 1.1 } },
+  { id: 'citizenship',  name: '시민권',         era: 4, prereqs: ['philosophy'], cost: 170, gov: 'republic', eff: {} },
+  { id: 'feudalism',    name: '봉건제',         era: 4, prereqs: ['code_of_law'], cost: 160, eff: { combat: 1.15 } },
+  { id: 'enlightenment', name: '계몽주의',      era: 5, prereqs: ['citizenship'], cost: 260, eff: { researchMul: 1.2 } },
+  { id: 'nationalism',  name: '민족주의',       era: 6, prereqs: ['enlightenment'], cost: 360, gov: 'autocracy', eff: { combat: 1.12 } },
+  { id: 'democracy',    name: '민주주의',       era: 7, prereqs: ['enlightenment'], cost: 480, gov: 'democracy', eff: {} },
 ];
 export const CIVIC_BY_ID = new Map(CIVICS.map((c) => [c.id, c]));
 
