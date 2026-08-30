@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+  <!-- ============ SEO / SOCIAL META ============ -->
+  <title>AEON — 모든 생물이 신경망을 가진 브라우저 신 게임 &amp; 문명 시뮬레이션</title>
+  <meta name="description" content="AEON은 무료 오픈소스 브라우저 신 게임 &amp; 문명 시뮬레이터입니다. 모든 생물이 진짜 진화하는 신경망입니다. WorldBox × Civ 인공생명 — 설치 없이 오프라인에서 동작." />
+  <meta name="keywords" content="신 게임, 문명 시뮬, 신경망 게임, 인공생명, alife, 유전 알고리즘, 진화 시뮬, 에이전트 시뮬, 창발 게임플레이, WorldBox, Civ, 샌드박스 게임, 브라우저 게임, HTML5 캔버스 게임, 오픈소스 게임, 인디 게임, 설치 없음, 오프라인 게임" />
+  <meta name="author" content="lordbasilaiassistant-sudo (한글화: sigco3111 / HyeRin)" />
+  <meta name="theme-color" content="#0b0e14" />
+  <link rel="canonical" href="https://lordbasilaiassistant-sudo.github.io/aeon/" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="AEON — 모든 생물이 신경망을 가진 브라우저 신 게임 &amp; 문명 시뮬" />
+  <meta property="og:description" content="무료 오픈소스 신 게임 &amp; 문명 시뮬레이터 — 모든 생물이 진짜 진화하는 신경망입니다. WorldBox × Civ 인공생명 — 100% 브라우저에서 실행." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://lordbasilaiassistant-sudo.github.io/aeon/" />
+  <meta property="og:image" content="https://lordbasilaiassistant-sudo.github.io/aeon/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:site_name" content="AEON" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="AEON — 모든 생물이 신경망을 가진 브라우저 신 게임 &amp; 문명 시뮬" />
+  <meta name="twitter:description" content="무료 오픈소스 신 게임 &amp; 문명 시뮬레이터 — 모든 생물이 진짜 진화하는 신경망. WorldBox × Civ — 100% 브라우저에서 실행." />
+  <meta name="twitter:image" content="https://lordbasilaiassistant-sudo.github.io/aeon/og.png" />
+
+  <!-- Structured data: schema.org VideoGame -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "VideoGame",
+    "name": "AEON",
+    "description": "AEON은 무료 오픈소스 브라우저 신 게임 &amp; 문명 시뮬레이터입니다. 모든 생물이 진짜 진화하는 신경망입니다. WorldBox(신 샌드박스)와 Civ(깊은 진화)의 결합 — 서바이벌에서 백성을 이끌거나, 크리에이티브에서 신으로 세계를 빚으세요. 인공생명, 유전 진화, 창발 게임플레이 — 설치 없이 100% 브라우저에서 실행.",
+    "url": "https://lordbasilaiassistant-sudo.github.io/aeon/",
+    "image": "https://lordbasilaiassistant-sudo.github.io/aeon/og.png",
+    "genre": ["신 게임", "문명 시뮬레이터", "인공생명", "시뮬레이션", "전략", "샌드박스"],
+    "keywords": "신 게임, 문명 시뮬, 신경망 게임, 인공생명, alife, 유전 알고리즘, 진화 시뮬, 창발 게임플레이, 에이전트 시뮬레이션",
+    "applicationCategory": "Game",
+    "gamePlatform": "Web browser",
+    "operatingSystem": "Web browser",
+    "browserRequirements": "자바스크립트와 HTML5 캔버스가 필요합니다. 모든 최신 브라우저에서 실행됩니다.",
+    "isAccessibleForFree": true,
+    "author": {
+      "@type": "Person",
+      "name": "lordbasilaiassistant-sudo"
+    },
+    "creator": {
+      "@type": "Person",
+      "name": "lordbasilaiassistant-sudo"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+  <!-- ========== END SEO / SOCIAL META ========== -->
+
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <div id="loading">
+    <div class="loading-inner">
+      <h1>AEON</h1>
+      <p class="tagline">진화하는 마음들이 사는 살아있는 세계</p>
+      <div class="loading-bar"><div class="loading-bar-fill" id="loadbar"></div></div>
+      <p class="loading-status" id="loadstatus">세계를 여는 중…</p>
+    </div>
+  </div>
+
+  <canvas id="game"></canvas>
+
+  <!-- HUD overlay -->
+  <div id="hud" class="hidden">
+    <!-- top bar -->
+    <div id="topbar">
+      <div class="topbar-left">
+        <span class="logo">AEON</span>
+        <span id="mode-badge" class="mode-badge god">신</span>
+      </div>
+      <div class="topbar-center" id="world-stats">
+        <span class="stat" data-tip="<b>연도</b> — 세계에서 얼마나 시간이 흘렀는가. 시간은 절대 멈추지 않으며 Space로 일시정지할 수 있습니다."><span class="stat-icon">☀</span><span id="stat-year">0</span></span>
+        <span class="stat" data-tip="<b>살아있는 마음</b> — 지금 살아있는 모든 생물. 각자가 자신의 신경망으로 생각합니다."><span class="stat-icon">◉</span><span id="stat-pop">0</span></span>
+        <span class="stat" data-tip="<b>세대</b> — 생명이 얼마나 번식하고 진화했는가. 높을수록 더 똑똑하고 더 적합한 뇌를 가집니다."><span class="stat-icon">🜂</span><span id="stat-gen">0</span></span>
+        <span class="stat" data-tip="<b>민족</b> — 세계에 살아있는 고유한 민족들 — 당신의 백성과 라이벌들."><span class="stat-icon">⚑</span><span id="stat-nations">0</span></span>
+        <span class="stat" data-tip="<b>뇌의 최고 적응도</b> — 어떤 마음이 한 번이라도 도달한 최고 생존 점수. 진화가 얼마나 잘 진행되고 있는지의 척도입니다."><span class="stat-icon">✦</span><span id="stat-fit">0</span></span>
+      </div>
+      <div class="topbar-right">
+        <button id="btn-nations" class="ctrl" data-tip="<b>민족</b> — 세계의 모든 백성을 살펴봅니다. 하나를 클릭해 그곳으로 이동한 뒤 <b>통치</b>를 눌러 이끄세요.">⚑ 민족</button>
+        <button id="btn-speed" class="ctrl" data-tip="<b>속도</b> — 클릭으로 시뮬레이션 속도를 순환(1×–5×). 1–5 키로 직접 설정할 수 있고 Space로 일시정지.">▶ 1×</button>
+        <button id="btn-help" class="ctrl" data-tip="<b>플레이 방법</b> — 모드, 조작, 핵심 행동, 승리와 패배 조건.">?</button>
+        <button id="btn-3d" class="ctrl" data-tip="<b>3D / 2D</b> — 화면을 전환합니다. 3D에서는 <b>Shift</b>를 누른 채 드래그해 카메라를 돌립니다.">◳ 3D</button>
+        <button id="btn-menu" class="ctrl" data-tip="<b>메뉴</b> — 세계 새로 시작, 일시정지, 도구 안내, 전체 조작.">☰</button>
+      </div>
+    </div>
+
+    <!-- Civ-style research + civic banners (top-left, shown when leading a nation) -->
+    <div id="civ-banners" class="hidden">
+      <button class="civ-banner" id="research-banner" data-tab="research"
+        data-tip="<b>연구</b> — 백성이 현재 연구 중인 기술과 진행도. 클릭해 다음 우선 과제를 선택하세요.">
+        <span class="cb-ico">🔬</span>
+        <span class="cb-mid"><span class="cb-text">연구 선택</span><span class="cb-prog"><i></i></span></span>
+        <span class="cb-eta"></span>
+      </button>
+      <button class="civ-banner civic" id="civic-banner" data-tab="research"
+        data-tip="<b>시민 제도</b> — 백성이 채택한 정치·문화. 새로운 시민 제도가 새 통치 방식을 잠금해제합니다. 클릭해 선택하세요.">
+        <span class="cb-ico">📜</span>
+        <span class="cb-mid"><span class="cb-text">시민 제도 선택</span><span class="cb-prog"><i></i></span></span>
+        <span class="cb-eta"></span>
+      </button>
+    </div>
+
+    <!-- left tool dock -->
+    <div id="dock">
+      <div class="dock-group" id="dock-god">
+        <div class="dock-label">신의 손</div>
+        <button class="tool" data-tool="inspect">🔍</button>
+        <button class="tool" data-tool="raise">⛰</button>
+        <button class="tool" data-tool="lower">🌊</button>
+        <button class="tool" data-tool="forest">🌲</button>
+        <button class="tool" data-tool="spawn">✿</button>
+        <button class="tool" data-tool="food">🍒</button>
+        <button class="tool" data-tool="smite">⚡</button>
+        <button class="tool" data-tool="possess">👁</button>
+      </div>
+    </div>
+
+    <!-- right inspector panel -->
+    <div id="inspector" class="panel hidden">
+      <div class="panel-head">
+        <span id="insp-title">조사</span>
+        <button class="panel-close" id="insp-close">✕</button>
+      </div>
+      <div class="panel-body" id="insp-body"></div>
+    </div>
+
+    <!-- nations browser panel -->
+    <div id="nations-panel" class="panel hidden">
+      <div class="panel-head">
+        <span>⚑ 민족</span>
+        <button class="panel-close" id="nations-close">✕</button>
+      </div>
+      <div class="panel-body" id="nations-list"></div>
+    </div>
+
+    <!-- nation control HUD (shown when leading a nation) -->
+    <div id="nation-bar" class="hidden">
+      <div class="nation-head">
+        <span class="nation-flag" id="nation-flag">⚑</span>
+        <span class="nation-name" id="nation-name">—</span>
+        <button id="nation-found" data-tip="<b>도시 세우기</b> (금화 10) — 비옥하고 비어 있는 땅을 클릭해 도시를 세웁니다. 새로운 도시는 백성과 경제를 키웁니다.">🏛 도시</button>
+        <button id="nation-army" data-tip="<b>지휘</b> — 병사들을 드래그로 선택한 뒤, 클릭으로 이동·공격. 다시 클릭하면 지휘 모드에서 빠져나옵니다.">⚔ 지휘</button>
+        <button id="nation-leave" data-tip="<b>승천</b> — 신의 시점으로 다시 올라갑니다(또는 그저 관찰). 손을 놓으면 평의회가 나라를 다시 이끌기 시작합니다.">↑ 승천</button>
+      </div>
+      <div class="nation-stats" id="nation-stats"></div>
+      <div class="nation-tabs">
+        <button class="ntab active" data-ntab="policies" data-tip="<b>정책</b> — 당신이 정한 법과 우선순위. 백성은 그 안에서 각자의 뇌로 살아갑니다.">정책</button>
+        <button class="ntab" data-ntab="research" data-tip="<b>연구</b> — 백성이 다음에 추구할 기술을 조종합니다.">연구</button>
+        <button class="ntab" data-ntab="diplo" data-tip="<b>외교</b> — 라이벌 민족과의 전쟁·평화·동맹·교역.">외교</button>
+        <button class="ntab" data-ntab="destiny" data-tip="<b>숙원</b> — 장기 승리 목표를 선택합니다(아무것도 고르지 않고 그냥 버텨도 좋습니다).">숙원</button>
+      </div>
+      <div class="nation-tabbody">
+        <div class="ntab-page" data-page="policies"><div class="nation-policies" id="nation-policies"></div></div>
+        <div class="ntab-page hidden" data-page="research" id="nation-research"></div>
+        <div class="ntab-page hidden" data-page="diplo" id="nation-diplo"></div>
+        <div class="ntab-page hidden" data-page="destiny" id="nation-destiny"></div>
+      </div>
+    </div>
+
+    <!-- command-mode banner -->
+    <div id="command-banner" class="hidden">⚔ 지휘 중 — 드래그로 선택 · 클릭으로 이동/공격 · Esc로 종료</div>
+
+    <!-- found-mode banner (twin of command banner) -->
+    <div id="found-banner" class="hidden">🏛 도시 세우는 중 — 비옥하고 비어 있는 땅을 클릭해 도시를 세우세요 (금화 10) · Esc로 취소</div>
+
+    <!-- bottom toast / event log -->
+    <div id="eventlog"></div>
+
+    <!-- minimap (Civ-style, bottom-left) -->
+    <div id="minimap-wrap">
+      <canvas id="minimap" width="220" height="140"></canvas>
+    </div>
+  </div>
+
+  <!-- START SCREEN: choose Survival or Creative -->
+  <div id="start-screen">
+    <div class="start-inner">
+      <h1 class="start-logo">AEON</h1>
+      <p class="start-tag">진화하는 마음들의 세계 — 모든 영혼이 진짜 신경망으로 생각합니다</p>
+      <div class="mode-cards">
+        <button class="mode-card" id="mode-survival">
+          <div class="mode-ico">⚑</div>
+          <div class="mode-title">서바이벌</div>
+          <div class="mode-sub">한 민족을 직접 이끌기</div>
+          <div class="mode-desc">살아있는 세계에서 한 민족의 통치자가 되어보세요. 탐험·정착·연구·교역·전쟁·생존 — 신의 힘 없이, 오직 세상의 법칙 안에서. 라이벌 민족들이 당신 주변에서 일어납니다. Civ의 방식입니다.</div>
+          <div class="mode-go">민족 이끌기 →</div>
+        </button>
+        <button class="mode-card" id="mode-creative">
+          <div class="mode-ico">✷</div>
+          <div class="mode-title">크리에이티브</div>
+          <div class="mode-sub">신의 시점에서 세계를 빚기</div>
+          <div class="mode-desc">신의 손 — 산을 일으키고, 바다를 파고, 숲을 키우고, 생명을 심고, 내리칩니다. 목표는 없습니다 — 그저 빚고, 문명이 스스로 오르내리는 것을 지켜보세요.</div>
+          <div class="mode-go">신이 되기 →</div>
+        </button>
+      </div>
+      <p class="start-foot">무료 &amp; 오픈소스 · 사용자 컴퓨터 안에서만 실행 · 외부로 나가는 데이터는 없습니다</p>
+    </div>
+  </div>
+
+  <!-- CREATE YOUR PEOPLE (Survival) -->
+  <div id="create-screen" class="hidden">
+    <div class="create-inner">
+      <button class="create-back" id="create-back">← 뒤로</button>
+      <h2 class="create-title">새 민족 창시</h2>
+      <p class="create-note">백성의 유산은 그들이 태어날 때의 뇌를 결정합니다 — 진화는 그 다음부터 시작합니다.</p>
+
+      <label class="field-label">이름</label>
+      <div class="name-row">
+        <input id="people-name" class="name-input" type="text" maxlength="24" placeholder="예: 황금의 아우렐리안" />
+        <button id="name-roll" class="roll-btn" title="무작위 이름">🎲</button>
+      </div>
+
+      <label class="field-label">깃발 색</label>
+      <div id="banner-swatches" class="swatches"></div>
+
+      <label class="field-label">유산 <span class="field-hint">— 최대 두 가지 선택</span></label>
+      <div id="create-traits" class="trait-chips"></div>
+
+      <div id="homeland-note" class="homeland-note">당신의 백성은 라이벌로부터 먼, 비옥한 고장 한켠에 정착합니다.</div>
+
+      <button id="create-begin" class="big-btn create-begin">이야기를 시작</button>
+    </div>
+  </div>
+
+  <!-- menu modal (help / controls / tools / restart) -->
+  <div id="menu-modal" class="modal hidden">
+    <div class="modal-card menu-card" id="menu-card"></div>
+  </div>
+
+  <!-- how-to-play reference (also the god intro) -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-card help-card">
+      <h2>AEON 플레이 방법</h2>
+      <p class="help-sub">모든 생물이 진화하는 신경망으로 생각하는 살아있는 세계. 아무것도 미리 정해진 것이 없고, 아무것도 사용자 컴퓨터 밖으로 나가지 않습니다.</p>
+
+      <div class="help-section">
+        <h3>두 가지 플레이 방식</h3>
+        <div class="help-grid">
+          <div><span class="help-tag">서바이벌</span> 한 민족의 통치자가 되어보세요. 법과 큰 결정은 당신이 정하고, 시민들은 그 안에서 각자의 삶을 살아갑니다. 성장하고, 연구하고, 싸우고, 숙원을 좇으세요. 이길 수도, 질 수도 있습니다.</div>
+          <div><span class="help-tag gold">크리에이티브</span> 신의 손을 가진 신이 되세요 — 땅을 들었다 내리고, 숲을 키우고, 생명을 심고, 음식을 축복하거나 내리칩니다. 목표는 없습니다 — 그저 빚고, 세계가 스스로 펼쳐지는 것을 지켜봅니다.</div>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <h3>조작</h3>
+        <div class="help-grid">
+          <div><span class="help-tag">탭 / 클릭</span> 선택 &amp; 조사 — 생물을 가까이서 보면 그 뇌와 혈통, 민족/도시는 확대해 그 이야기를 보여줍니다</div>
+          <div><span class="help-tag">드래그</span> 세계를 이동</div>
+          <div><span class="help-tag">스크롤</span> 줌 — 궤도에서 지면까지 하나의 연속된 공간</div>
+          <div><span class="help-tag">Shift+드래그</span> 카메라 궤도 회전(3D 보기 — <b>◳ 3D</b> 버튼으로 전환)</div>
+          <div><span class="help-tag">Space</span> 일시정지 / 재개 · <span class="help-tag">1–5</span> 시뮬레이션 속도</div>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <h3>민족을 이끌기 (서바이벌)</h3>
+        <div class="help-grid">
+          <div><span class="help-tag">🏛 도시</span> 금화 10을 쓰고 비옥한 빈 땅을 클릭해 새 도시를 세웁니다</div>
+          <div><span class="help-tag">⚔ 지휘</span> 병사들을 드래그로 선택한 뒤, 클릭으로 이동/공격</div>
+          <div><span class="help-tag">↑ 승천</span> 손을 놓으세요 — 평의회가 당신의 뜻대로 나라를 이끌게 됩니다</div>
+          <div><span class="help-tag">정책</span> 슬라이더로 국가의 의지를 설정합니다 — 시민들의 뇌가 나머지를 합니다. 컨트롤에 마우스를 올리면 무엇인지 보입니다.</div>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <h3>승리와 패배</h3>
+        <p class="help-win"><b>국민을 키우고</b>, <b>기술</b> 트리를 오르고, <b>시민 제도</b>(정치 체제)를 채택하고, 라이벌보다 오래 살아남으세요. 명확한 승리 목표를 원하면 국가 패널에서 <b>숙원</b>을 선택하세요 — 일정 수의 백성에 도달하거나, 마지막까지 남는 것이 목표입니다. <span class="help-lose">국민이 0명이면 게임이 끝납니다.</span></p>
+      </div>
+
+      <button id="modal-start" class="big-btn">알겠습니다 — 시작</button>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
