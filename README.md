@@ -13,6 +13,10 @@
 
 ---
 
+## 📸 실제 실행 화면
+
+![AEON 실제 화면](18-aeon.jpg)
+
 ## 🎮 라이브 데모
 
 **[https://lordbasilaiassistant-sudo.github.io/aeon/](https://lordbasilaiassistant-sudo.github.io/aeon/)**
